@@ -82,6 +82,7 @@ test('GET / serves the Dota Map UI shell', async () => {
     const html = await response.text();
 
     assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
     assert.match(html, /Dota Map/);
     assert.match(html, /app.js/);
     assert.match(html, /styles.css/);

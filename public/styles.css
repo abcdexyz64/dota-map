@@ -281,6 +281,30 @@ select:focus {
   overflow-wrap: anywhere;
 }
 
+.compatibility-chip {
+  display: inline-flex;
+  margin-top: 7px;
+  padding: 3px 6px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.compatibility-chip.safe {
+  color: #052d16;
+  background: var(--ok);
+}
+
+.compatibility-chip.caution {
+  color: #201000;
+  background: var(--orange-soft);
+}
+
+.compatibility-chip.unsafe {
+  color: #fff;
+  background: var(--danger);
+}
+
 .switch-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -329,6 +353,38 @@ select:focus {
 
 .terrain-meta {
   padding: 13px;
+}
+
+.compatibility-box {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: #101010;
+  border: 1px solid #333;
+}
+
+.compatibility-box strong {
+  display: block;
+  font-size: 13px;
+}
+
+.compatibility-box p {
+  margin: 6px 0 0;
+  color: #c8c8c8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.compatibility-box.safe {
+  border-color: rgba(74, 222, 128, .6);
+}
+
+.compatibility-box.caution {
+  border-color: rgba(255, 181, 69, .75);
+}
+
+.compatibility-box.unsafe {
+  border-color: rgba(255, 77, 77, .75);
 }
 
 .primary-actions {

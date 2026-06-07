@@ -49,6 +49,67 @@ const LABELS = {
   'dotaalt.vpk': { zh: '官方备用主地图', en: 'Official Alternate Main Map' }
 };
 
+function compatibilityFor(fileName) {
+  const lower = fileName.toLowerCase();
+  if (/^dota_\d{3}\.vpk$/.test(lower)) {
+    return {
+      category: 'historical-main-map',
+      ranked: 'unsafe',
+      label: {
+        zh: '不能正常进天梯',
+        en: 'Not ranked-compatible'
+      },
+      reason: {
+        zh: '这是旧版本主地图资源，布局和实体可能与当前版本不一致，不适合当前天梯比赛。',
+        en: 'This is a historical main-map package. Layout and entities may not match the current live game, so it is not suitable for ranked matchmaking.'
+      }
+    };
+  }
+
+  if (lower === 'dotaalt.vpk' || lower === 'dota_alt2.vpk') {
+    return {
+      category: 'alternate-main-map',
+      ranked: 'caution',
+      label: {
+        zh: '天梯慎用',
+        en: 'Ranked caution'
+      },
+      reason: {
+        zh: '这是官方备用主地图包，不是普通装饰地形。除非你明确知道用途，否则不要用它进天梯。',
+        en: 'This is an alternate main-map package, not a normal cosmetic terrain. Avoid ranked unless you know exactly why you are using it.'
+      }
+    };
+  }
+
+  if (lower === 'dota_crownfall.vpk' || lower === 'dota_halloween.vpk') {
+    return {
+      category: 'event-terrain',
+      ranked: 'caution',
+      label: {
+        zh: '活动地图，天梯慎用',
+        en: 'Event map, use caution'
+      },
+      reason: {
+        zh: '这是活动相关地图资源。它通常不是常规可选地形，正式天梯前建议先用观战、本地大厅或普通模式验证。',
+        en: 'This is event-related map content. Test it in a lobby or unranked context before using it around ranked matchmaking.'
+      }
+    };
+  }
+
+  return {
+    category: 'cosmetic-terrain',
+    ranked: 'safe',
+    label: {
+      zh: '当前布局地形',
+      en: 'Current-layout terrain'
+    },
+    reason: {
+      zh: '这是装饰地形包，通常只改变视觉外观，不是旧版本主地图。',
+      en: 'This is a cosmetic terrain package. It normally changes visuals rather than replacing the live map layout.'
+    }
+  };
+}
+
 function assertMapsDir(mapsDir) {
   if (!mapsDir || typeof mapsDir !== 'string') {
     throw new Error('Maps directory is required');
@@ -112,6 +173,7 @@ function scanMaps(mapsDir) {
       return {
         fileName,
         label: labelFor(fileName),
+        compatibility: compatibilityFor(fileName),
         size: stats.size,
         lastModified: stats.mtime.toISOString()
       };

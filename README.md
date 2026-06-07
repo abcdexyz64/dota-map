@@ -44,6 +44,12 @@ Pick the terrain file you want to try, then pick the active terrain slot you alr
 
 Use **Dry run** first to preview the operation. Dry run does not require Dota to be closed and does not create backups.
 
+## Map Compatibility Labels
+
+- **Current-layout terrain**: cosmetic terrain packages such as Winter, Autumn, Desert, Immortal Gardens, The Emerald Abyss, Reef's Edge, and Sanctums of the Divine.
+- **Not ranked-compatible**: historical main-map packages such as `dota_683.vpk`, `dota_706.vpk`, and `dota_737.vpk`. These are old full map resources, not normal terrain skins, so the UI marks them as unable to normally enter ranked matchmaking.
+- **Ranked caution**: alternate or event map packages. Test these in a lobby or unranked context before using them around ranked matchmaking.
+
 ## Safety
 
 - The app only accepts local file names inside the selected maps directory.

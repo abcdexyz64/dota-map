@@ -62,6 +62,24 @@ test('scanMaps gives readable labels to historical and premium terrain files', (
   assert.equal(labelsByFile['dota_ti10.vpk'].zh, 'Sanctums of the Divine（神圣圣所）');
 });
 
+test('scanMaps marks historical maps as not ranked-compatible', () => {
+  const dir = makeTempMapsDir();
+  writeFile(dir, 'dota_683.vpk', 'old map');
+  writeFile(dir, 'dota_737.vpk', 'newer old map');
+  writeFile(dir, 'dota_winter.vpk', 'winter terrain');
+  writeFile(dir, 'dota_coloseum.vpk', 'immortal gardens');
+
+  const mapsByFile = Object.fromEntries(
+    scanMaps(dir).maps.map((map) => [map.fileName, map])
+  );
+
+  assert.equal(mapsByFile['dota_683.vpk'].compatibility.ranked, 'unsafe');
+  assert.equal(mapsByFile['dota_683.vpk'].compatibility.label.zh, '不能正常进天梯');
+  assert.match(mapsByFile['dota_737.vpk'].compatibility.reason.zh, /旧版本主地图/);
+  assert.equal(mapsByFile['dota_winter.vpk'].compatibility.ranked, 'safe');
+  assert.equal(mapsByFile['dota_coloseum.vpk'].compatibility.label.en, 'Current-layout terrain');
+});
+
 test('planSwitch rejects path traversal and identical source and slot files', () => {
   const dir = makeTempMapsDir();
   writeFile(dir, 'dota_winter.vpk', 'winter');

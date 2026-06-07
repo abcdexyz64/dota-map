@@ -26,7 +26,8 @@ const i18n = {
     stepSwap: '交换地图文件名',
     switchDone: '替换完成，重新进入游戏后生效',
     switchMap: '一键替换地图',
-    dryRunDone: '模拟执行完成，没有改动任何文件'
+    dryRunDone: '模拟执行完成，没有改动任何文件',
+    compatibility: '兼容性'
   },
   en: {
     activeSlot: 'Active slot',
@@ -55,7 +56,8 @@ const i18n = {
     stepSwap: 'Swap map filenames',
     switchDone: 'Switch complete. Re-enter the game to see it.',
     switchMap: 'Switch map',
-    dryRunDone: 'Dry run complete. No files were changed.'
+    dryRunDone: 'Dry run complete. No files were changed.',
+    compatibility: 'Compatibility'
   }
 };
 
@@ -71,6 +73,7 @@ const state = {
 const elements = {
   backupCount: document.getElementById('backupCount'),
   backupSelect: document.getElementById('backupSelect'),
+  compatibilityBox: document.getElementById('compatibilityBox'),
   dryRunBtn: document.getElementById('dryRunBtn'),
   langEn: document.getElementById('langEn'),
   langZh: document.getElementById('langZh'),
@@ -110,6 +113,14 @@ async function requestJson(url, options) {
 
 function localizedLabel(map) {
   return map.label[state.lang] || map.label.en || map.fileName;
+}
+
+function localizedCompatibility(map) {
+  return {
+    label: map?.compatibility?.label?.[state.lang] || map?.compatibility?.label?.en || '',
+    reason: map?.compatibility?.reason?.[state.lang] || map?.compatibility?.reason?.en || '',
+    ranked: map?.compatibility?.ranked || 'caution'
+  };
 }
 
 function artClass(fileName) {
@@ -162,11 +173,13 @@ function renderMaps() {
     const item = document.createElement('button');
     item.type = 'button';
     item.className = `map-item ${map.fileName === state.sourceFile ? 'active' : ''}`;
+    const compatibility = localizedCompatibility(map);
     item.innerHTML = `
       <span class="thumb ${artClass(map.fileName)}"></span>
       <span>
         <span class="map-name">${localizedLabel(map)}</span>
         <span class="map-file">${map.fileName}</span>
+        <span class="compatibility-chip ${compatibility.ranked}">${compatibility.label}</span>
       </span>
     `;
     item.addEventListener('click', () => {
@@ -181,10 +194,16 @@ function renderMaps() {
 
 function renderSelection() {
   const slot = state.maps.find((map) => map.fileName === state.slotFile);
+  const source = state.maps.find((map) => map.fileName === state.sourceFile);
+  const compatibility = localizedCompatibility(source);
   elements.slotTitle.textContent = slot ? localizedLabel(slot) : 'Winter Slot';
   elements.sourceSelect.value = state.sourceFile;
   elements.slotSelect.value = state.slotFile;
   elements.sourceArt.className = `terrain-art ${artClass(state.sourceFile)}`;
+  elements.compatibilityBox.className = `compatibility-box ${compatibility.ranked}`;
+  elements.compatibilityBox.innerHTML = source
+    ? `<strong>${t('compatibility')}: ${compatibility.label}</strong><p>${compatibility.reason}</p>`
+    : '';
 }
 
 function renderBackups() {
