@@ -75,6 +75,9 @@ No npm dependencies are required.
 
 ```powershell
 npm run package:win
+npm run package:exe
 ```
 
 The zip is written to `dist/dota-map-windows-0.1.0.zip`. The package includes the orange-black `dota2map` icon in `assets/` and does not include any `.vpk` files.
+
+The EXE package is written to `dist/dota-map-windows-exe-0.1.0.zip`. It contains `DotaMap.exe`, so users do not need to install Node.js separately.

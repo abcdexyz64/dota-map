@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "description": "A local web UI for safely swapping Dota 2 terrain map VPK filenames.",
   "main": "src/server.js",
+  "bin": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "package:exe": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-exe.ps1",
     "package:win": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-package.ps1",
     "test": "node --test tests/*.test.js",
     "check": "node --test tests/*.test.js"
@@ -17,5 +19,12 @@
     "vpk"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "pkg": {
+    "assets": [
+      "public/**/*",
+      "assets/**/*"
+    ],
+    "outputPath": "dist/exe"
+  }
 }

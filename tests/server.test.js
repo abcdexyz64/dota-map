@@ -88,3 +88,27 @@ test('GET / serves the Dota Map UI shell', async () => {
     assert.match(html, /styles.css/);
   });
 });
+
+test('GET / can serve UI shell from embedded static assets', async () => {
+  const server = createServer({
+    staticAssets: {
+      'index.html': Buffer.from('<!doctype html><title>Dota Map</title><script src="/app.js"></script>'),
+      'app.js': Buffer.from('window.__dotaMapEmbedded = true;')
+    }
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/`);
+    const html = await response.text();
+    const scriptResponse = await fetch(`http://127.0.0.1:${port}/app.js`);
+    const script = await scriptResponse.text();
+
+    assert.equal(response.status, 200);
+    assert.equal(scriptResponse.status, 200);
+    assert.match(html, /Dota Map/);
+    assert.match(script, /__dotaMapEmbedded/);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

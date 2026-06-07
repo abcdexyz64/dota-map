@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { URL } = require('node:url');
+const sea = require('node:sea');
 
 const {
   DEFAULT_DOTA_MAPS_PATH,
@@ -59,24 +60,49 @@ function readJsonBody(req) {
   });
 }
 
-function staticFileFor(urlPath) {
+function staticAssetKey(urlPath) {
   const requestPath = urlPath === '/' ? '/index.html' : urlPath;
   const decoded = decodeURIComponent(requestPath);
   const normalized = path.normalize(decoded).replace(/^(\.\.[/\\])+/, '');
-  const filePath = path.join(PUBLIC_DIR, normalized);
+  return normalized.replace(/^[/\\]+/, '').replace(/\\/g, '/');
+}
+
+function staticFileFor(urlPath) {
+  const filePath = path.join(PUBLIC_DIR, staticAssetKey(urlPath));
   const resolved = path.resolve(filePath);
   if (!resolved.startsWith(path.resolve(PUBLIC_DIR))) return null;
   return resolved;
 }
 
-function serveStatic(req, res, urlPath) {
+function readEmbeddedAsset(assetKey, staticAssets) {
+  if (staticAssets && staticAssets[assetKey]) {
+    return Buffer.from(staticAssets[assetKey]);
+  }
+  if (!sea.isSea()) return null;
+  const seaKey = `public/${assetKey}`;
+  if (!sea.getAssetKeys().includes(seaKey)) return null;
+  return Buffer.from(sea.getAsset(seaKey));
+}
+
+function serveStatic(req, res, urlPath, staticAssets) {
+  const assetKey = staticAssetKey(urlPath);
+  const embeddedAsset = readEmbeddedAsset(assetKey, staticAssets);
+  const ext = path.extname(assetKey).toLowerCase();
+  if (embeddedAsset) {
+    res.writeHead(200, {
+      'cache-control': 'no-store',
+      'content-type': MIME_TYPES[ext] || 'application/octet-stream'
+    });
+    res.end(embeddedAsset);
+    return;
+  }
+
   const filePath = staticFileFor(urlPath);
   if (!filePath || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('Not found');
     return;
   }
-  const ext = path.extname(filePath).toLowerCase();
   res.writeHead(200, {
     'cache-control': 'no-store',
     'content-type': MIME_TYPES[ext] || 'application/octet-stream'
@@ -97,6 +123,7 @@ function openFolder(mapsDir) {
 
 function createServer(options = {}) {
   const processChecker = options.processChecker;
+  const staticAssets = options.staticAssets;
 
   return http.createServer(async (req, res) => {
     const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${DEFAULT_PORT}`}`);
@@ -154,7 +181,7 @@ function createServer(options = {}) {
       }
 
       if (req.method === 'GET') {
-        serveStatic(req, res, requestUrl.pathname);
+        serveStatic(req, res, requestUrl.pathname, staticAssets);
         return;
       }
 
