@@ -40,6 +40,28 @@ test('scanMaps returns terrain-like vpk files with known labels first', () => {
   assert.equal(result.maps[1].label.en, 'Winter Terrain');
 });
 
+test('scanMaps gives readable labels to historical and premium terrain files', () => {
+  const dir = makeTempMapsDir();
+  writeFile(dir, 'dota_683.vpk', 'old map');
+  writeFile(dir, 'dota_737.vpk', 'newer old map');
+  writeFile(dir, 'dota_cavern.vpk', 'emerald abyss');
+  writeFile(dir, 'dota_coloseum.vpk', 'immortal gardens');
+  writeFile(dir, 'dota_jungle.vpk', 'overgrown empire');
+  writeFile(dir, 'dota_ti10.vpk', 'sanctums');
+
+  const labelsByFile = Object.fromEntries(
+    scanMaps(dir).maps.map((map) => [map.fileName, map.label])
+  );
+
+  assert.equal(labelsByFile['dota_683.vpk'].zh, '历史地图 6.83');
+  assert.equal(labelsByFile['dota_683.vpk'].en, 'Historical Map 6.83');
+  assert.equal(labelsByFile['dota_737.vpk'].zh, '历史地图 7.37');
+  assert.equal(labelsByFile['dota_cavern.vpk'].en, 'The Emerald Abyss');
+  assert.equal(labelsByFile['dota_coloseum.vpk'].zh, 'Immortal Gardens（不朽庭院）');
+  assert.equal(labelsByFile['dota_jungle.vpk'].en, 'Overgrown Empire');
+  assert.equal(labelsByFile['dota_ti10.vpk'].zh, 'Sanctums of the Divine（神圣圣所）');
+});
+
 test('planSwitch rejects path traversal and identical source and slot files', () => {
   const dir = makeTempMapsDir();
   writeFile(dir, 'dota_winter.vpk', 'winter');

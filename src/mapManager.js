@@ -23,19 +23,30 @@ const EXCLUDED_PREFIXES = [
 ];
 
 const LABELS = {
+  'dota_683.vpk': { zh: '历史地图 6.83', en: 'Historical Map 6.83' },
+  'dota_685.vpk': { zh: '历史地图 6.85', en: 'Historical Map 6.85' },
+  'dota_688.vpk': { zh: '历史地图 6.88', en: 'Historical Map 6.88' },
+  'dota_706.vpk': { zh: '历史地图 7.06', en: 'Historical Map 7.06' },
+  'dota_719.vpk': { zh: '历史地图 7.19', en: 'Historical Map 7.19' },
+  'dota_722.vpk': { zh: '历史地图 7.22', en: 'Historical Map 7.22' },
+  'dota_728.vpk': { zh: '历史地图 7.28', en: 'Historical Map 7.28' },
+  'dota_732.vpk': { zh: '历史地图 7.32', en: 'Historical Map 7.32' },
+  'dota_737.vpk': { zh: '历史地图 7.37', en: 'Historical Map 7.37' },
+  'dota_alt2.vpk': { zh: '官方备用主地图 2', en: 'Official Alternate Main Map 2' },
   'dota_autumn.vpk': { zh: '秋季地图', en: 'Autumn Terrain' },
-  'dota_cavern.vpk': { zh: '岩洞地图', en: 'Cavern Terrain' },
-  'dota_coloseum.vpk': { zh: '竞技场地图', en: 'Colosseum Terrain' },
-  'dota_crownfall.vpk': { zh: '王冠陨落地图', en: 'Crownfall Terrain' },
+  'dota_cavern.vpk': { zh: 'The Emerald Abyss（翡翠深渊）', en: 'The Emerald Abyss' },
+  'dota_coloseum.vpk': { zh: 'Immortal Gardens（不朽庭院）', en: 'Immortal Gardens' },
+  'dota_crownfall.vpk': { zh: '王冠陨落事件地图', en: 'Crownfall Event Map' },
   'dota_desert.vpk': { zh: '荒漠地图', en: 'Desert Terrain' },
   'dota_halloween.vpk': { zh: '万圣节地图', en: 'Halloween Terrain' },
-  'dota_journey.vpk': { zh: '旅途地图', en: 'Journey Terrain' },
-  'dota_jungle.vpk': { zh: '丛林地图', en: 'Jungle Terrain' },
-  'dota_reef.vpk': { zh: '礁石地图', en: 'Reef Terrain' },
+  'dota_journey.vpk': { zh: "The King's New Journey（国王的新旅程）", en: "The King's New Journey" },
+  'dota_jungle.vpk': { zh: 'Overgrown Empire（蔓生帝国）', en: 'Overgrown Empire' },
+  'dota_reef.vpk': { zh: "Reef's Edge（礁石边缘）", en: "Reef's Edge" },
   'dota_spring.vpk': { zh: '春季地图', en: 'Spring Terrain' },
   'dota_summer.vpk': { zh: '夏季地图', en: 'Summer Terrain' },
-  'dota_ti10.vpk': { zh: 'TI10 地图', en: 'TI10 Terrain' },
-  'dota_winter.vpk': { zh: '冬季地图', en: 'Winter Terrain' }
+  'dota_ti10.vpk': { zh: 'Sanctums of the Divine（神圣圣所）', en: 'Sanctums of the Divine' },
+  'dota_winter.vpk': { zh: '冬季地图', en: 'Winter Terrain' },
+  'dotaalt.vpk': { zh: '官方备用主地图', en: 'Official Alternate Main Map' }
 };
 
 function assertMapsDir(mapsDir) {
