@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dota Map</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-lockup" aria-label="Dota Map">
+        <span class="brand-word">Dota</span><span class="brand-block">Map</span>
+      </div>
+      <div class="top-actions">
+        <div class="segmented" role="group" aria-label="Language">
+          <button id="langZh" class="segment active" type="button">中文</button>
+          <button id="langEn" class="segment" type="button">EN</button>
+        </div>
+        <button id="openFolderBtn" class="ghost-button" type="button" data-i18n="openFolder">打开目录</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="panel side-panel">
+        <div class="panel-heading">
+          <span class="eyebrow" data-i18n="availableMaps">可用地图</span>
+          <strong id="mapCount">0</strong>
+        </div>
+        <div class="path-box">
+          <label for="mapsDir" data-i18n="mapsDir">地图目录</label>
+          <div class="path-row">
+            <input id="mapsDir" type="text" spellcheck="false">
+            <button id="scanBtn" class="small-button" type="button" data-i18n="scan">扫描</button>
+          </div>
+        </div>
+        <div id="mapList" class="map-list"></div>
+      </aside>
+
+      <section class="panel switch-panel">
+        <div class="status-row">
+          <div>
+            <span class="eyebrow" data-i18n="activeSlot">当前启用槽位</span>
+            <h1 id="slotTitle">Winter Slot</h1>
+          </div>
+          <span id="statusBadge" class="status-badge" data-i18n="ready">准备就绪</span>
+        </div>
+
+        <div class="switch-grid">
+          <article class="terrain-card current">
+            <div class="terrain-art winter-art"></div>
+            <div class="terrain-meta">
+              <span data-i18n="slotFile">槽位文件名</span>
+              <select id="slotSelect"></select>
+            </div>
+          </article>
+
+          <article class="terrain-card selected">
+            <div id="sourceArt" class="terrain-art halloween-art"></div>
+            <div class="terrain-meta">
+              <span data-i18n="replacementFile">准备替换为</span>
+              <select id="sourceSelect"></select>
+            </div>
+          </article>
+        </div>
+
+        <div class="primary-actions">
+          <button id="switchBtn" class="primary-button" type="button" data-i18n="switchMap">一键替换地图</button>
+        </div>
+        <div class="secondary-actions">
+          <button id="dryRunBtn" class="ghost-button" type="button" data-i18n="dryRun">模拟执行</button>
+          <button id="restoreBtn" class="ghost-button" type="button" data-i18n="restore">恢复备份</button>
+          <button id="refreshBackupsBtn" class="ghost-button" type="button" data-i18n="refresh">刷新</button>
+        </div>
+
+        <div id="messageBox" class="message-box" aria-live="polite"></div>
+      </section>
+
+      <aside class="panel queue-panel">
+        <span class="eyebrow" data-i18n="operationQueue">执行队列</span>
+        <ol class="queue-list">
+          <li data-i18n="stepClose">检查 Dota 是否关闭</li>
+          <li data-i18n="stepBackup">创建时间戳备份</li>
+          <li data-i18n="stepSwap">交换地图文件名</li>
+          <li data-i18n="stepRecord">写入可恢复记录</li>
+        </ol>
+
+        <div class="backup-box">
+          <div class="panel-heading compact">
+            <span class="eyebrow" data-i18n="backups">备份</span>
+            <strong id="backupCount">0</strong>
+          </div>
+          <select id="backupSelect"></select>
+        </div>
+
+        <div class="release-note">
+          <strong data-i18n="releaseBoundaryTitle">开源发布边界</strong>
+          <p data-i18n="releaseBoundaryText">仓库只包含工具源码，不内置或分发任何 Dota 地图文件。</p>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

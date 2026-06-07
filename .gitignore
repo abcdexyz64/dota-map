@@ -1,0 +1,7 @@
+.superpowers/
+.dota-map-backups/
+node_modules/
+coverage/
+*.log
+dist/
+tmp/

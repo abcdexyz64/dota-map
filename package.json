@@ -1,0 +1,20 @@
+{
+  "name": "dota-map",
+  "version": "0.1.0",
+  "description": "A local web UI for safely swapping Dota 2 terrain map VPK filenames.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test tests/*.test.js",
+    "check": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "dota",
+    "dota2",
+    "terrain",
+    "maps",
+    "vpk"
+  ],
+  "author": "",
+  "license": "MIT"
+}
