@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "package:win": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-package.ps1",
     "test": "node --test tests/*.test.js",
     "check": "node --test tests/*.test.js"
   },

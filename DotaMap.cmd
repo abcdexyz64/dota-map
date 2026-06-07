@@ -7,5 +7,4 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-start "" "http://localhost:17777"
 node src\server.js

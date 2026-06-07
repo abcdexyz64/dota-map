@@ -38,6 +38,8 @@ Then open:
 http://localhost:17777
 ```
 
+The server opens the correct local URL automatically. If port `17777` is busy, it retries nearby ports and opens the actual URL it selected.
+
 ## How It Works
 
 Pick the terrain file you want to try, then pick the active terrain slot you already selected in Dota 2. For example, if Dota is currently configured to use the Winter terrain, choose `dota_winter.vpk` as the slot file and choose another `.vpk` as the replacement.
@@ -68,3 +70,11 @@ npm start
 ```
 
 No npm dependencies are required.
+
+## Package
+
+```powershell
+npm run package:win
+```
+
+The zip is written to `dist/dota-map-windows-0.1.0.zip`. The package includes the orange-black `dota2map` icon in `assets/` and does not include any `.vpk` files.

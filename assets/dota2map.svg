@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">dota2map icon</title>
+  <desc id="desc">Orange and black local map switcher icon with D2M lettering.</desc>
+  <rect width="512" height="512" rx="92" fill="#050505"/>
+  <path d="M66 92h380v328H66z" fill="#0f0f0f" stroke="#ff9900" stroke-width="18"/>
+  <path d="M96 132h130v248H96z" fill="#ff9900"/>
+  <path d="M244 132h172v70H244zM244 226h172v60H244zM244 310h172v70H244z" fill="#ff9900"/>
+  <path d="M116 154h58c44 0 78 34 78 92s-34 92-78 92h-58zm50 45v94h10c17 0 29-17 29-47s-12-47-29-47z" fill="#050505"/>
+  <text x="256" y="190" fill="#050505" font-family="Segoe UI, Arial, sans-serif" font-size="68" font-weight="900">2</text>
+  <text x="256" y="282" fill="#050505" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="900">MAP</text>
+  <text x="256" y="359" fill="#050505" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="900">dota2map</text>
+</svg>

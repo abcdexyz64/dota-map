@@ -195,6 +195,9 @@ if (require.main === module) {
     .then(({ url }) => {
       console.log(`Dota Map is running at ${url}`);
       console.log('Press Ctrl+C to stop.');
+      if (process.env.DOTA_MAP_NO_OPEN !== '1' && process.platform === 'win32') {
+        childProcess.execFile('cmd.exe', ['/c', 'start', '', url], () => {});
+      }
     })
     .catch((error) => {
       console.error(error.message);
