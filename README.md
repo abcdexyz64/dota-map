@@ -44,6 +44,8 @@ Pick the terrain file you want to try, then pick the active terrain slot you alr
 
 Use **Dry run** first to preview the operation. Dry run does not require Dota to be closed and does not create backups.
 
+When you switch maps repeatedly, Dota Map automatically restores the previous active filename swap before applying the new one. This prevents chained swaps from leaving older terrain files under the wrong names.
+
 ## Map Compatibility Labels
 
 - **Current-layout terrain**: cosmetic terrain packages such as Winter, Autumn, Desert, Immortal Gardens, The Emerald Abyss, Reef's Edge, and Sanctums of the Divine.

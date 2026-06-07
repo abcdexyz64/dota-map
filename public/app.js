@@ -25,6 +25,7 @@ const i18n = {
     stepRecord: '写入可恢复记录',
     stepSwap: '交换地图文件名',
     switchDone: '替换完成，重新进入游戏后生效',
+    revertedPrevious: '已先恢复上一次替换',
     switchMap: '一键替换地图',
     dryRunDone: '模拟执行完成，没有改动任何文件',
     compatibility: '兼容性'
@@ -55,6 +56,7 @@ const i18n = {
     stepRecord: 'Write restore record',
     stepSwap: 'Swap map filenames',
     switchDone: 'Switch complete. Re-enter the game to see it.',
+    revertedPrevious: 'Previous switch was restored first',
     switchMap: 'Switch map',
     dryRunDone: 'Dry run complete. No files were changed.',
     compatibility: 'Compatibility'
@@ -263,7 +265,8 @@ async function runSwitch(dryRun) {
   if (dryRun) {
     setMessage(`${t('dryRunDone')}: ${json.plan.sourceFile} -> ${json.plan.slotFile}`, 'ok');
   } else {
-    setMessage(`${t('switchDone')}. Backup: ${json.backupId}`, 'ok');
+    const prefix = json.revertedPrevious ? `${t('revertedPrevious')}. ` : '';
+    setMessage(`${prefix}${t('switchDone')}. Backup: ${json.backupId}`, 'ok');
     await scanMaps();
   }
 }

@@ -1,5 +1,6 @@
 .superpowers/
 .dota-map-backups/
+.dota-map-active.json
 node_modules/
 coverage/
 *.log

@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const DEFAULT_DOTA_MAPS_PATH = 'E:\\steam\\steamapps\\common\\dota 2 beta\\game\\dota\\maps';
 const BACKUP_DIR_NAME = '.dota-map-backups';
+const ACTIVE_STATE_FILE = '.dota-map-active.json';
 
 const EXCLUDED_VPK_NAMES = new Set([
   'blackmap.vpk',
@@ -283,23 +284,86 @@ function createBackup(plan) {
   return manifest;
 }
 
+function activeStatePath(mapsDir) {
+  return path.join(mapsDir, ACTIVE_STATE_FILE);
+}
+
+function readActiveState(mapsDir) {
+  const statePath = activeStatePath(mapsDir);
+  if (!fs.existsSync(statePath)) return null;
+  return JSON.parse(fs.readFileSync(statePath, 'utf8'));
+}
+
+function writeActiveState(plan) {
+  const activeState = {
+    backupId: plan.backupId,
+    sourceFile: plan.sourceFile,
+    slotFile: plan.slotFile,
+    mapsDir: plan.mapsDir,
+    activatedAt: new Date().toISOString()
+  };
+  fs.writeFileSync(activeStatePath(plan.mapsDir), JSON.stringify(activeState, null, 2), 'utf8');
+  return activeState;
+}
+
+function clearActiveState(mapsDir) {
+  const statePath = activeStatePath(mapsDir);
+  if (fs.existsSync(statePath)) fs.unlinkSync(statePath);
+}
+
+function swapFileNames(sourcePath, slotPath, mapsDir) {
+  const tempPath = path.join(
+    mapsDir,
+    `.__dota_map_swap_${Date.now()}_${crypto.randomBytes(3).toString('hex')}.vpk`
+  );
+  fs.renameSync(slotPath, tempPath);
+  fs.renameSync(sourcePath, slotPath);
+  fs.renameSync(tempPath, sourcePath);
+}
+
+function revertActiveSwap(mapsDir, activeState) {
+  const sourceFile = assertVpkFileName(activeState.sourceFile);
+  const slotFile = assertVpkFileName(activeState.slotFile);
+  const { sourcePath, slotPath } = ensureFilesExist(mapsDir, sourceFile, slotFile);
+  swapFileNames(sourcePath, slotPath, mapsDir);
+  clearActiveState(mapsDir);
+  return {
+    backupId: activeState.backupId,
+    sourceFile,
+    slotFile,
+    revertedAt: new Date().toISOString()
+  };
+}
+
 function switchMap({ mapsDir, sourceFile, slotFile, dryRun = false, processChecker = isDotaRunning }) {
-  const plan = planSwitch({ mapsDir, sourceFile, slotFile });
-  if (dryRun) {
-    return { ok: true, dryRun: true, plan };
+  const dir = assertMapsDir(mapsDir);
+  const activeState = readActiveState(dir);
+
+  if (!dryRun) {
+    assertDotaClosed(processChecker);
   }
 
-  assertDotaClosed(processChecker);
+  let revertedPrevious = null;
+  if (!dryRun && activeState) {
+    revertedPrevious = revertActiveSwap(dir, activeState);
+  }
+
+  const plan = planSwitch({ mapsDir: dir, sourceFile, slotFile });
+  if (dryRun) {
+    return { ok: true, dryRun: true, plan, activeSwapToRevert: activeState };
+  }
+
   const manifest = createBackup(plan);
-  fs.renameSync(plan.operations[2].from, plan.operations[2].to);
-  fs.renameSync(plan.operations[3].from, plan.operations[3].to);
-  fs.renameSync(plan.operations[4].from, plan.operations[4].to);
+  swapFileNames(plan.sourcePath, plan.slotPath, plan.mapsDir);
+  const activeSwap = writeActiveState(plan);
 
   return {
     ok: true,
     backupId: plan.backupId,
+    activeSwap,
     manifest,
-    operations: plan.operations
+    operations: plan.operations,
+    revertedPrevious
   };
 }
 
@@ -360,10 +424,16 @@ function restoreBackup({ mapsDir, backupId, processChecker = isDotaRunning }) {
     fs.copyFileSync(backupPath, path.join(dir, fileName));
   }
 
+  const activeState = readActiveState(dir);
+  if (activeState && activeState.backupId === id) {
+    clearActiveState(dir);
+  }
+
   return { ok: true, backupId: id, restoredFiles: manifest.files.map((file) => file.fileName) };
 }
 
 module.exports = {
+  ACTIVE_STATE_FILE,
   BACKUP_DIR_NAME,
   DEFAULT_DOTA_MAPS_PATH,
   isDotaRunning,

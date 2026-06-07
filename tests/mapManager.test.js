@@ -5,6 +5,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const {
+  ACTIVE_STATE_FILE,
   listBackups,
   planSwitch,
   restoreBackup,
@@ -134,6 +135,40 @@ test('switchMap dry run does not require Dota to be closed', () => {
   assert.equal(result.dryRun, true);
   assert.equal(readFile(dir, 'dota_winter.vpk'), 'winter-content');
   assert.equal(fs.existsSync(path.join(dir, '.dota-map-backups')), false);
+});
+
+test('switchMap reverts the previous active swap before applying a new one', () => {
+  const dir = makeTempMapsDir();
+  writeFile(dir, 'dota_winter.vpk', 'winter-content');
+  writeFile(dir, 'dota_halloween.vpk', 'halloween-content');
+  writeFile(dir, 'dota_desert.vpk', 'desert-content');
+
+  const first = switchMap({
+    mapsDir: dir,
+    sourceFile: 'dota_halloween.vpk',
+    slotFile: 'dota_winter.vpk',
+    processChecker: () => false
+  });
+
+  assert.equal(readFile(dir, 'dota_winter.vpk'), 'halloween-content');
+  assert.equal(readFile(dir, 'dota_halloween.vpk'), 'winter-content');
+
+  const second = switchMap({
+    mapsDir: dir,
+    sourceFile: 'dota_desert.vpk',
+    slotFile: 'dota_winter.vpk',
+    processChecker: () => false
+  });
+
+  assert.equal(second.revertedPrevious.backupId, first.backupId);
+  assert.equal(readFile(dir, 'dota_winter.vpk'), 'desert-content');
+  assert.equal(readFile(dir, 'dota_desert.vpk'), 'winter-content');
+  assert.equal(readFile(dir, 'dota_halloween.vpk'), 'halloween-content');
+
+  const activeState = JSON.parse(fs.readFileSync(path.join(dir, ACTIVE_STATE_FILE), 'utf8'));
+  assert.equal(activeState.backupId, second.backupId);
+  assert.equal(activeState.sourceFile, 'dota_desert.vpk');
+  assert.equal(activeState.slotFile, 'dota_winter.vpk');
 });
 
 test('restoreBackup restores files from a selected backup manifest', () => {
