@@ -40,7 +40,7 @@ const i18n = {
     removeChatBinds: '移除',
     chatBindEnabled: '已写入',
     chatBindMissing: '未写入',
-    cfgHint: '每一行会生成一条 say；为避免误执行命令，内容不允许包含英文分号或引号。',
+    cfgHint: '每一行会生成一条 say；换行会插入约 0.1 秒 wait；* 会写成 KP_MULTIPLY。为避免误执行命令，内容不允许包含英文分号或引号。',
     chatBindSaved: '喊话绑定已写入，重启游戏后生效',
     chatBindPreview: 'CFG 预览',
     chatBindRemoved: '喊话绑定已移除',
@@ -95,7 +95,7 @@ const i18n = {
     removeChatBinds: 'Remove',
     chatBindEnabled: 'Written',
     chatBindMissing: 'Missing',
-    cfgHint: 'Each line becomes one say command. To avoid accidental command execution, quotes and semicolons are blocked.',
+    cfgHint: 'Each line becomes one say command. New lines insert about 0.1s of wait commands. * is written as KP_MULTIPLY. To avoid accidental command execution, quotes and semicolons are blocked.',
     chatBindSaved: 'Chat binds written. Restart the game to apply them.',
     chatBindPreview: 'CFG preview',
     chatBindRemoved: 'Chat binds removed',
@@ -125,14 +125,14 @@ const state = {
   chatBind: {
     cfgPath: '',
     managedBlockExists: false,
-    predictionKey: 'F6',
+    predictionKey: '*',
     predictionMessages: [
       '已经预测他们队伍将取得胜利！',
-      '已经连续2688次成功预测了胜利。'
+      '已经连续6657次成功预测了胜利。'
     ],
     abandonKey: '-',
     abandonMessages: [
-      'XXX由于长时间没有重连至游戏，系统判定他为逃跑。',
+      'SurrenderAdvisor由于长时间没有重连至游戏，系统判定他为逃跑。',
       '剩余玩家可以自由退出。'
     ]
   }

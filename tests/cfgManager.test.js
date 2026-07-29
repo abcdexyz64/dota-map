@@ -41,8 +41,8 @@ test('configureChatBinds creates an autoexec.cfg managed block', () => {
   assert.equal(result.changed, true);
   assert.equal(result.backupPath, null);
   assert.match(content, new RegExp(CHAT_BIND_START));
-  assert.match(content, /bind "F6" "say 已经预测他们队伍将取得胜利！; say 已经连续2688次成功预测了胜利。"/);
-  assert.match(content, /bind "-" "say XXX由于长时间没有重连至游戏，系统判定他为逃跑。; say 剩余玩家可以自由退出。"/);
+  assert.match(content, /bind "KP_MULTIPLY" "say 已经预测他们队伍将取得胜利！; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; say 已经连续6657次成功预测了胜利。"/);
+  assert.match(content, /bind "-" "say SurrenderAdvisor由于长时间没有重连至游戏，系统判定他为逃跑。; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; say 剩余玩家可以自由退出。"/);
   assert.match(content, new RegExp(CHAT_BIND_END));
 });
 
@@ -66,8 +66,8 @@ test('configureChatBinds replaces only the managed block and backs up existing c
   assert.equal(path.basename(path.dirname(result.backupPath)), CFG_BACKUP_DIR_NAME);
   assert.match(content, /echo user-before/);
   assert.match(content, /echo user-after/);
-  assert.match(content, /bind "F7" "say 第一句; say 第二句"/);
-  assert.match(content, /bind "KP_MINUS" "say 假装断线; say 大家可以走了"/);
+  assert.match(content, /bind "F7" "say 第一句; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; say 第二句"/);
+  assert.match(content, /bind "KP_MINUS" "say 假装断线; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; say 大家可以走了"/);
   assert.doesNotMatch(content, /say old/);
 });
 
@@ -88,6 +88,40 @@ test('getChatBindInfo parses the managed block back into settings', () => {
   assert.deepEqual(info.settings.predictionMessages, ['A', 'B']);
   assert.equal(info.settings.abandonKey, 'BACKSPACE');
   assert.deepEqual(info.settings.abandonMessages, ['C']);
+});
+
+test('getChatBindInfo ignores wait commands between multiline say messages', () => {
+  const { mapsDir } = makeTempDotaDir();
+  configureChatBinds({
+    mapsDir,
+    predictionKey: '*',
+    predictionMessages: ['A', 'B', 'C'],
+    abandonKey: '-',
+    abandonMessages: ['D', 'E']
+  });
+
+  const info = getChatBindInfo({ mapsDir });
+
+  assert.equal(info.settings.predictionKey, 'KP_MULTIPLY');
+  assert.deepEqual(info.settings.predictionMessages, ['A', 'B', 'C']);
+  assert.deepEqual(info.settings.abandonMessages, ['D', 'E']);
+});
+
+test('configureChatBinds accepts asterisk as keypad multiply shortcut', () => {
+  const { mapsDir, cfgPath } = makeTempDotaDir();
+
+  const result = configureChatBinds({
+    mapsDir,
+    predictionKey: '*',
+    predictionMessages: ['star key'],
+    abandonKey: 'KP_MINUS',
+    abandonMessages: ['minus key']
+  });
+  const content = readUtf8(cfgPath);
+
+  assert.equal(result.settings.predictionKey, 'KP_MULTIPLY');
+  assert.match(content, /bind "KP_MULTIPLY" "say star key"/);
+  assert.match(content, /bind "KP_MINUS" "say minus key"/);
 });
 
 test('removeChatBinds removes only the managed block and backs up existing cfg', () => {

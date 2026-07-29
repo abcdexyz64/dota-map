@@ -8,16 +8,22 @@ const DEFAULT_DOTA_CFG_PATH = path.join(path.dirname(DEFAULT_DOTA_MAPS_PATH), 'c
 const CFG_BACKUP_DIR_NAME = '.dota-map-cfg-backups';
 const CHAT_BIND_START = '// Dota Map chat binds begin';
 const CHAT_BIND_END = '// Dota Map chat binds end';
+const WAIT_COMMANDS_BETWEEN_LINES = 10;
+
+const KEY_ALIASES = new Map([
+  ['*', 'KP_MULTIPLY'],
+  ['＊', 'KP_MULTIPLY']
+]);
 
 const DEFAULT_CHAT_BIND_SETTINGS = {
-  predictionKey: 'F6',
+  predictionKey: '*',
   predictionMessages: [
     '已经预测他们队伍将取得胜利！',
-    '已经连续2688次成功预测了胜利。'
+    '已经连续6657次成功预测了胜利。'
   ],
   abandonKey: '-',
   abandonMessages: [
-    'XXX由于长时间没有重连至游戏，系统判定他为逃跑。',
+    'SurrenderAdvisor由于长时间没有重连至游戏，系统判定他为逃跑。',
     '剩余玩家可以自由退出。'
   ]
 };
@@ -61,7 +67,8 @@ function resolveCfgPath({ mapsDir, cfgPath } = {}) {
 }
 
 function normalizeKey(key, label) {
-  const normalized = String(key || '').trim();
+  const raw = String(key || '').trim();
+  const normalized = KEY_ALIASES.get(raw) || raw;
   if (!normalized) {
     throw new Error(`${label} key is required`);
   }
@@ -135,7 +142,10 @@ function quoteCfgArg(value) {
 }
 
 function sayCommand(messages) {
-  return messages.map((message) => `say ${message}`).join('; ');
+  const waitCommands = Array.from({ length: WAIT_COMMANDS_BETWEEN_LINES }, () => 'wait');
+  return messages
+    .flatMap((message, index) => (index === 0 ? [`say ${message}`] : [...waitCommands, `say ${message}`]))
+    .join('; ');
 }
 
 function buildBindLine(key, messages) {
@@ -210,6 +220,7 @@ function backupExistingCfg(cfgPath, existingContent) {
 function parseSayMessages(command) {
   return String(command || '')
     .split(/\s*;\s*/)
+    .filter((part) => /^say\s+/i.test(part.trim()))
     .map((part) => part.replace(/^say\s+/i, '').trim())
     .filter(Boolean);
 }
@@ -334,6 +345,7 @@ module.exports = {
   CHAT_BIND_START,
   DEFAULT_CHAT_BIND_SETTINGS,
   DEFAULT_DOTA_CFG_PATH,
+  WAIT_COMMANDS_BETWEEN_LINES,
   buildChatBindBlock,
   configureChatBinds,
   defaultCfgPathForMapsDir,

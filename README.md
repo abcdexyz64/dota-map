@@ -70,11 +70,11 @@ The **Chat binds** panel writes a managed block to:
 By default it creates:
 
 ```cfg
-bind "F6" "say 已经预测他们队伍将取得胜利！; say 已经连续2688次成功预测了胜利。"
-bind "-" "say XXX由于长时间没有重连至游戏，系统判定他为逃跑。; say 剩余玩家可以自由退出。"
+bind "KP_MULTIPLY" "say 已经预测他们队伍将取得胜利！; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; say 已经连续6657次成功预测了胜利。"
+bind "-" "say SurrenderAdvisor由于长时间没有重连至游戏，系统判定他为逃跑。; wait; wait; wait; wait; wait; wait; wait; wait; wait; wait; say 剩余玩家可以自由退出。"
 ```
 
-You can customize both keys and both message groups in the UI. Each textarea line becomes one `say` command. The tool blocks English semicolons and quotes in message text so a typo cannot accidentally inject another console command.
+You can customize both keys and both message groups in the UI. Each textarea line becomes one `say` command, and Dota Map inserts `wait` commands between lines for an approximately 0.1-second gap. The `*` key is written as `KP_MULTIPLY`. The tool blocks English semicolons and quotes in message text so a typo cannot accidentally inject another console command.
 
 Use **Preview** first to inspect the generated cfg block. Use **Write CFG** to create or update the block. If `autoexec.cfg` already exists, Dota Map stores a backup under `.dota-map-cfg-backups` before writing. Use **Remove** to delete only the Dota Map managed block while preserving the rest of the file.
 
@@ -116,6 +116,6 @@ npm run package:win
 npm run package:exe
 ```
 
-The zip is written to `dist/dota-map-windows-0.3.0.zip`. The package includes the orange-black `dota2map` icon in `assets/` and does not include any `.vpk` files.
+The zip is written to `dist/dota-map-windows-0.3.1.zip`. The package includes the orange-black `dota2map` icon in `assets/` and does not include any `.vpk` files.
 
-The EXE package is written to `dist/dota-map-windows-exe-0.3.0.zip`. It contains `DotaMap.exe`, so users do not need to install Node.js separately.
+The EXE package is written to `dist/dota-map-windows-exe-0.3.1.zip`. It contains `DotaMap.exe`, so users do not need to install Node.js separately.
