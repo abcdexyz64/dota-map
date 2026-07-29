@@ -6,6 +6,7 @@ const test = require('node:test');
 
 const {
   ACTIVE_STATE_FILE,
+  inspectActiveSwap,
   listBackups,
   planSwitch,
   restoreBackup,
@@ -169,6 +170,109 @@ test('switchMap reverts the previous active swap before applying a new one', () 
   assert.equal(activeState.backupId, second.backupId);
   assert.equal(activeState.sourceFile, 'dota_desert.vpk');
   assert.equal(activeState.slotFile, 'dota_winter.vpk');
+});
+
+test('inspectActiveSwap identifies the actual map in the active slot', () => {
+  const dir = makeTempMapsDir();
+  writeFile(dir, 'dota_winter.vpk', 'winter-content');
+  writeFile(dir, 'dota_ti10.vpk', 'ti10-content');
+
+  switchMap({
+    mapsDir: dir,
+    sourceFile: 'dota_ti10.vpk',
+    slotFile: 'dota_winter.vpk',
+    processChecker: () => false
+  });
+
+  const status = inspectActiveSwap(dir);
+
+  assert.equal(status.status, 'active');
+  assert.equal(status.active, true);
+  assert.equal(status.sourceFile, 'dota_ti10.vpk');
+  assert.equal(status.slotFile, 'dota_winter.vpk');
+  assert.equal(status.actualSlotFile, 'dota_ti10.vpk');
+});
+
+test('scanMaps clears a stale active swap after a Steam update resets files', () => {
+  const dir = makeTempMapsDir();
+  writeFile(dir, 'dota_winter.vpk', 'winter-content');
+  writeFile(dir, 'dota_ti10.vpk', 'ti10-content');
+
+  switchMap({
+    mapsDir: dir,
+    sourceFile: 'dota_ti10.vpk',
+    slotFile: 'dota_winter.vpk',
+    processChecker: () => false
+  });
+
+  writeFile(dir, 'dota_winter.vpk', 'steam-updated-winter');
+  writeFile(dir, 'dota_ti10.vpk', 'steam-updated-ti10');
+
+  const result = scanMaps(dir);
+
+  assert.equal(result.activeSwap.status, 'stale');
+  assert.equal(result.activeSwap.cleared, true);
+  assert.equal(result.activeSwap.actualSlotFile, 'dota_winter.vpk');
+  assert.equal(fs.existsSync(path.join(dir, ACTIVE_STATE_FILE)), false);
+});
+
+test('switchMap skips stale active state instead of reverting old file names', () => {
+  const dir = makeTempMapsDir();
+  writeFile(dir, 'dota_winter.vpk', 'winter-content');
+  writeFile(dir, 'dota_ti10.vpk', 'ti10-content');
+  writeFile(dir, 'dota_desert.vpk', 'desert-content');
+
+  switchMap({
+    mapsDir: dir,
+    sourceFile: 'dota_ti10.vpk',
+    slotFile: 'dota_winter.vpk',
+    processChecker: () => false
+  });
+
+  writeFile(dir, 'dota_winter.vpk', 'steam-updated-winter');
+  writeFile(dir, 'dota_ti10.vpk', 'steam-updated-ti10');
+
+  const result = switchMap({
+    mapsDir: dir,
+    sourceFile: 'dota_desert.vpk',
+    slotFile: 'dota_winter.vpk',
+    processChecker: () => false
+  });
+
+  assert.equal(result.revertedPrevious, null);
+  assert.equal(result.skippedActiveSwap.status, 'stale');
+  assert.equal(result.skippedActiveSwap.cleared, true);
+  assert.equal(readFile(dir, 'dota_winter.vpk'), 'desert-content');
+  assert.equal(readFile(dir, 'dota_desert.vpk'), 'steam-updated-winter');
+  assert.equal(readFile(dir, 'dota_ti10.vpk'), 'steam-updated-ti10');
+});
+
+test('inspectActiveSwap supports legacy active state without stored signatures', () => {
+  const dir = makeTempMapsDir();
+  writeFile(dir, 'dota_winter.vpk', 'winter-content');
+  writeFile(dir, 'dota_ti10.vpk', 'ti10-content');
+
+  const switched = switchMap({
+    mapsDir: dir,
+    sourceFile: 'dota_ti10.vpk',
+    slotFile: 'dota_winter.vpk',
+    processChecker: () => false
+  });
+  const activePath = path.join(dir, ACTIVE_STATE_FILE);
+  const activeState = JSON.parse(fs.readFileSync(activePath, 'utf8'));
+  delete activeState.expectedAfterSwap;
+  fs.writeFileSync(activePath, JSON.stringify(activeState, null, 2), 'utf8');
+
+  const manifestPath = path.join(dir, '.dota-map-backups', switched.backupId, 'manifest.json');
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  delete manifest.expectedAfterSwap;
+  for (const file of manifest.files) delete file.signature;
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+
+  const status = inspectActiveSwap(dir);
+
+  assert.equal(status.status, 'active');
+  assert.equal(status.actualSlotFile, 'dota_ti10.vpk');
 });
 
 test('restoreBackup restores files from a selected backup manifest', () => {

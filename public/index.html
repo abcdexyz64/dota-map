@@ -46,9 +46,14 @@
           <span id="statusBadge" class="status-badge" data-i18n="ready">准备就绪</span>
         </div>
 
+        <div id="activeStateBox" class="active-state-box">
+          <strong id="actualMapTitle">自动检测</strong>
+          <p id="activeStateText"></p>
+        </div>
+
         <div class="switch-grid">
           <article class="terrain-card current">
-            <div class="terrain-art winter-art"></div>
+            <div id="slotArt" class="terrain-art winter-art"></div>
             <div class="terrain-meta">
               <span data-i18n="slotFile">槽位文件名</span>
               <select id="slotSelect"></select>

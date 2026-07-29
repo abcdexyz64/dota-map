@@ -180,7 +180,8 @@ function scanMaps(mapsDir) {
       };
     });
 
-  return { mapsDir: dir, maps };
+  const activeSwap = inspectActiveSwap(dir, { cleanupStale: true });
+  return { mapsDir: dir, maps, activeSwap };
 }
 
 function ensureFilesExist(mapsDir, sourceFile, slotFile) {
@@ -257,6 +258,8 @@ function assertDotaClosed(processChecker = isDotaRunning) {
 
 function createBackup(plan) {
   fs.mkdirSync(plan.backupDir, { recursive: true });
+  const sourceSignature = fileSignature(plan.sourcePath);
+  const slotSignature = fileSignature(plan.slotPath);
   fs.copyFileSync(plan.sourcePath, path.join(plan.backupDir, plan.sourceFile));
   fs.copyFileSync(plan.slotPath, path.join(plan.backupDir, plan.slotFile));
 
@@ -270,12 +273,26 @@ function createBackup(plan) {
       {
         fileName: plan.sourceFile,
         originalPath: plan.sourcePath,
-        backupRelativePath: path.join(BACKUP_DIR_NAME, plan.backupId, plan.sourceFile)
+        backupRelativePath: path.join(BACKUP_DIR_NAME, plan.backupId, plan.sourceFile),
+        signature: sourceSignature
       },
       {
         fileName: plan.slotFile,
         originalPath: plan.slotPath,
-        backupRelativePath: path.join(BACKUP_DIR_NAME, plan.backupId, plan.slotFile)
+        backupRelativePath: path.join(BACKUP_DIR_NAME, plan.backupId, plan.slotFile),
+        signature: slotSignature
+      }
+    ],
+    expectedAfterSwap: [
+      {
+        fileName: plan.sourceFile,
+        contentFrom: plan.slotFile,
+        signature: slotSignature
+      },
+      {
+        fileName: plan.slotFile,
+        contentFrom: plan.sourceFile,
+        signature: sourceSignature
       }
     ]
   };
@@ -294,13 +311,14 @@ function readActiveState(mapsDir) {
   return JSON.parse(fs.readFileSync(statePath, 'utf8'));
 }
 
-function writeActiveState(plan) {
+function writeActiveState(plan, manifest) {
   const activeState = {
     backupId: plan.backupId,
     sourceFile: plan.sourceFile,
     slotFile: plan.slotFile,
     mapsDir: plan.mapsDir,
-    activatedAt: new Date().toISOString()
+    activatedAt: new Date().toISOString(),
+    expectedAfterSwap: manifest.expectedAfterSwap
   };
   fs.writeFileSync(activeStatePath(plan.mapsDir), JSON.stringify(activeState, null, 2), 'utf8');
   return activeState;
@@ -309,6 +327,170 @@ function writeActiveState(plan) {
 function clearActiveState(mapsDir) {
   const statePath = activeStatePath(mapsDir);
   if (fs.existsSync(statePath)) fs.unlinkSync(statePath);
+}
+
+function fileSignature(filePath) {
+  const stats = fs.statSync(filePath);
+  const hash = crypto.createHash('sha256');
+  const data = fs.readFileSync(filePath);
+  hash.update(data);
+  return {
+    size: stats.size,
+    sha256: hash.digest('hex'),
+    lastModified: stats.mtime.toISOString()
+  };
+}
+
+function signaturesMatch(left, right) {
+  if (!left || !right) return false;
+  if (left.sha256 && right.sha256) {
+    return String(left.sha256).toLowerCase() === String(right.sha256).toLowerCase();
+  }
+  return Number(left.size) === Number(right.size);
+}
+
+function manifestPathForBackup(mapsDir, backupId) {
+  return path.join(mapsDir, BACKUP_DIR_NAME, assertBackupId(backupId), 'manifest.json');
+}
+
+function signatureFromManifestFile(mapsDir, manifest, fileName) {
+  const file = manifest.files.find((entry) => entry.fileName === fileName);
+  if (!file) return null;
+  if (file.signature) return file.signature;
+  const backupPath = path.join(mapsDir, file.backupRelativePath);
+  if (!fs.existsSync(backupPath)) return null;
+  return fileSignature(backupPath);
+}
+
+function expectedSignaturesForActive(mapsDir, activeState) {
+  if (Array.isArray(activeState.expectedAfterSwap)) {
+    const sourceExpected = activeState.expectedAfterSwap.find((entry) => entry.fileName === activeState.sourceFile);
+    const slotExpected = activeState.expectedAfterSwap.find((entry) => entry.fileName === activeState.slotFile);
+    if (sourceExpected?.signature && slotExpected?.signature) {
+      return {
+        sourceExpected: sourceExpected.signature,
+        slotExpected: slotExpected.signature,
+        sourceOriginal: slotExpected.signature,
+        slotOriginal: sourceExpected.signature,
+        expectedFrom: 'active-state'
+      };
+    }
+  }
+
+  const manifestPath = manifestPathForBackup(mapsDir, activeState.backupId);
+  if (!fs.existsSync(manifestPath)) return null;
+  const manifest = readManifest(manifestPath);
+  const sourceOriginal = signatureFromManifestFile(mapsDir, manifest, activeState.sourceFile);
+  const slotOriginal = signatureFromManifestFile(mapsDir, manifest, activeState.slotFile);
+  if (!sourceOriginal || !slotOriginal) return null;
+  return {
+    sourceExpected: slotOriginal,
+    slotExpected: sourceOriginal,
+    sourceOriginal,
+    slotOriginal,
+    expectedFrom: 'backup-manifest'
+  };
+}
+
+function activeReason(status) {
+  const reasons = {
+    none: {
+      zh: '未检测到 Dota Map 交换记录，当前按文件名识别地图。',
+      en: 'No Dota Map swap record was found. The current map is identified by filename.'
+    },
+    active: {
+      zh: '已验证当前文件内容仍符合 Dota Map 的交换记录。',
+      en: 'The current files still match the Dota Map swap record.'
+    },
+    official: {
+      zh: '旧交换记录已经不再生效，文件内容看起来已回到原始槽位。',
+      en: 'The old swap record is no longer active. File contents appear to be back in their original slots.'
+    },
+    stale: {
+      zh: '检测到 Steam 更新或手动改动，旧交换记录已过期并会被忽略。',
+      en: 'A Steam update or manual change was detected. The old swap record is stale and will be ignored.'
+    },
+    invalid: {
+      zh: '旧交换记录不完整或备份缺失，已停止信任该记录。',
+      en: 'The old swap record is incomplete or its backup is missing, so it is no longer trusted.'
+    }
+  };
+  return reasons[status] || reasons.invalid;
+}
+
+function didFilesChangeAfterActivation(activeState, ...signatures) {
+  const activatedAt = Date.parse(activeState.activatedAt || '');
+  if (!Number.isFinite(activatedAt)) return false;
+  return signatures.some((signature) => Date.parse(signature.lastModified || '') > activatedAt);
+}
+
+function inspectActiveSwap(mapsDir, { cleanupStale = false } = {}) {
+  const dir = assertMapsDir(mapsDir);
+  const activeState = readActiveState(dir);
+  if (!activeState) {
+    return {
+      status: 'none',
+      active: false,
+      actualSlotFile: null,
+      cleared: false,
+      reason: activeReason('none')
+    };
+  }
+
+  let status = 'invalid';
+  let sourceFile = '';
+  let slotFile = '';
+  let currentSourceSignature = null;
+  let currentSlotSignature = null;
+  let cleared = false;
+
+  try {
+    sourceFile = assertVpkFileName(activeState.sourceFile);
+    slotFile = assertVpkFileName(activeState.slotFile);
+    const { sourcePath, slotPath } = ensureFilesExist(dir, sourceFile, slotFile);
+    currentSourceSignature = fileSignature(sourcePath);
+    currentSlotSignature = fileSignature(slotPath);
+    const expected = expectedSignaturesForActive(dir, activeState);
+
+    if (!expected) {
+      status = didFilesChangeAfterActivation(activeState, currentSourceSignature, currentSlotSignature)
+        ? 'stale'
+        : 'invalid';
+    } else if (
+      signaturesMatch(currentSourceSignature, expected.sourceExpected) &&
+      signaturesMatch(currentSlotSignature, expected.slotExpected)
+    ) {
+      status = 'active';
+    } else if (
+      signaturesMatch(currentSourceSignature, expected.sourceOriginal) &&
+      signaturesMatch(currentSlotSignature, expected.slotOriginal)
+    ) {
+      status = 'official';
+    } else {
+      status = 'stale';
+    }
+  } catch (error) {
+    status = 'invalid';
+  }
+
+  const shouldClear = cleanupStale && status !== 'active';
+  if (shouldClear) {
+    clearActiveState(dir);
+    cleared = true;
+  }
+
+  return {
+    status,
+    active: status === 'active',
+    sourceFile,
+    slotFile,
+    actualSlotFile: status === 'active' ? sourceFile : slotFile,
+    activeState,
+    currentSourceSignature,
+    currentSlotSignature,
+    cleared,
+    reason: activeReason(status)
+  };
 }
 
 function swapFileNames(sourcePath, slotPath, mapsDir) {
@@ -337,25 +519,31 @@ function revertActiveSwap(mapsDir, activeState) {
 
 function switchMap({ mapsDir, sourceFile, slotFile, dryRun = false, processChecker = isDotaRunning }) {
   const dir = assertMapsDir(mapsDir);
-  const activeState = readActiveState(dir);
+  const activeSwapStatus = inspectActiveSwap(dir, { cleanupStale: !dryRun });
 
   if (!dryRun) {
     assertDotaClosed(processChecker);
   }
 
   let revertedPrevious = null;
-  if (!dryRun && activeState) {
-    revertedPrevious = revertActiveSwap(dir, activeState);
+  if (!dryRun && activeSwapStatus.active) {
+    revertedPrevious = revertActiveSwap(dir, activeSwapStatus.activeState);
   }
 
   const plan = planSwitch({ mapsDir: dir, sourceFile, slotFile });
   if (dryRun) {
-    return { ok: true, dryRun: true, plan, activeSwapToRevert: activeState };
+    return {
+      ok: true,
+      dryRun: true,
+      plan,
+      activeSwapToRevert: activeSwapStatus.active ? activeSwapStatus.activeState : null,
+      activeSwapStatus
+    };
   }
 
   const manifest = createBackup(plan);
   swapFileNames(plan.sourcePath, plan.slotPath, plan.mapsDir);
-  const activeSwap = writeActiveState(plan);
+  const activeSwap = writeActiveState(plan, manifest);
 
   return {
     ok: true,
@@ -363,7 +551,8 @@ function switchMap({ mapsDir, sourceFile, slotFile, dryRun = false, processCheck
     activeSwap,
     manifest,
     operations: plan.operations,
-    revertedPrevious
+    revertedPrevious,
+    skippedActiveSwap: !activeSwapStatus.active && activeSwapStatus.status !== 'none' ? activeSwapStatus : null
   };
 }
 
@@ -436,6 +625,7 @@ module.exports = {
   ACTIVE_STATE_FILE,
   BACKUP_DIR_NAME,
   DEFAULT_DOTA_MAPS_PATH,
+  inspectActiveSwap,
   isDotaRunning,
   listBackups,
   planSwitch,

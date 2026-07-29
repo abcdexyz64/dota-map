@@ -1,6 +1,6 @@
 # Dota Map
 
-Dota Map is a local-only Windows helper for switching Dota 2 terrain `.vpk` filenames and managing simple Dota 2 chat binds through a black-and-orange browser UI.
+Dota Map is a local-only Windows helper for switching Dota 2 terrain `.vpk` filenames, detecting the real active terrain state, and managing simple Dota 2 chat binds through a black-and-orange browser UI.
 
 It does not include, download, or redistribute any Dota 2 map files. Users must provide their own local Dota 2 installation and map files.
 
@@ -48,6 +48,17 @@ Use **Dry run** first to preview the operation. Dry run does not require Dota to
 
 When you switch maps repeatedly, Dota Map automatically restores the previous active filename swap before applying the new one. This prevents chained swaps from leaving older terrain files under the wrong names.
 
+## Automatic Map Detection
+
+Dota Map does not blindly trust `.dota-map-active.json`. On every scan it validates the current source and slot files against the backup signatures from the last switch.
+
+- If the active swap still matches the recorded signatures, the UI shows the real map currently inside the selected slot.
+- If Steam updated Dota and overwrote those `.vpk` files, the old active record is marked stale and automatically ignored.
+- If the files are back in their original slots, the stale record is cleared and the app falls back to filename-based detection.
+- When starting a new switch, stale records are skipped instead of being restored, so an old pre-update swap cannot corrupt current files.
+
+This means if `dota_winter.vpk` used to contain `dota_ti10.vpk` but a later Dota update restored both files, Dota Map will treat the Winter slot as Winter again.
+
 ## Chat Binds
 
 The **Chat binds** panel writes a managed block to:
@@ -83,6 +94,7 @@ Restart Dota after writing the binds. If your local setup does not auto-run `aut
 
 - The app only accepts local file names inside the selected maps directory.
 - Every real switch creates timestamped backup copies before any rename happens.
+- Every switch record stores file signatures so later scans can verify whether the swap is still real.
 - Dota must be closed before switching or restoring.
 - Restore uses the selected backup manifest to copy original files back to their original names.
 - Chat bind writes only touch the selected `autoexec.cfg` file and only replace the block between Dota Map markers.
@@ -104,6 +116,6 @@ npm run package:win
 npm run package:exe
 ```
 
-The zip is written to `dist/dota-map-windows-0.2.0.zip`. The package includes the orange-black `dota2map` icon in `assets/` and does not include any `.vpk` files.
+The zip is written to `dist/dota-map-windows-0.3.0.zip`. The package includes the orange-black `dota2map` icon in `assets/` and does not include any `.vpk` files.
 
-The EXE package is written to `dist/dota-map-windows-exe-0.2.0.zip`. It contains `DotaMap.exe`, so users do not need to install Node.js separately.
+The EXE package is written to `dist/dota-map-windows-exe-0.3.0.zip`. It contains `DotaMap.exe`, so users do not need to install Node.js separately.

@@ -48,7 +48,40 @@ test('GET /api/maps scans a supplied maps directory', async () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(json.maps.map((map) => map.fileName), ['dota_halloween.vpk', 'dota_winter.vpk']);
+    assert.equal(json.activeSwap.status, 'none');
   });
+});
+
+test('GET /api/maps reports and clears stale active swap state', async () => {
+  const dir = makeTempMapsDir();
+  writeFile(dir, 'dota_winter.vpk', 'winter');
+  writeFile(dir, 'dota_ti10.vpk', 'ti10');
+
+  const server = createServer({ processChecker: () => false });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  try {
+    await fetch(`http://127.0.0.1:${port}/api/switch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        mapsDir: dir,
+        sourceFile: 'dota_ti10.vpk',
+        slotFile: 'dota_winter.vpk'
+      })
+    });
+    writeFile(dir, 'dota_winter.vpk', 'steam-reset-winter');
+    writeFile(dir, 'dota_ti10.vpk', 'steam-reset-ti10');
+
+    const response = await fetch(`http://127.0.0.1:${port}/api/maps?dir=${encodeURIComponent(dir)}`);
+    const json = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(json.activeSwap.status, 'stale');
+    assert.equal(json.activeSwap.cleared, true);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test('POST /api/switch supports dry run without changing files', async () => {

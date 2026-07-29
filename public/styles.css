@@ -160,6 +160,41 @@ h1 {
   font-weight: 900;
 }
 
+.active-state-box {
+  margin-top: 14px;
+  padding: 12px;
+  background: #141414;
+  border: 1px solid #333;
+  border-left: 3px solid var(--orange);
+  border-radius: var(--radius);
+}
+
+.active-state-box strong {
+  display: block;
+  font-size: 13px;
+  color: var(--orange);
+}
+
+.active-state-box p {
+  margin: 6px 0 0;
+  color: #cfcfcf;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.active-state-box.active {
+  border-left-color: var(--ok);
+}
+
+.active-state-box.stale,
+.active-state-box.invalid {
+  border-left-color: var(--danger);
+}
+
+.active-state-box.official {
+  border-left-color: var(--orange-soft);
+}
+
 .path-box {
   margin-top: 16px;
 }
@@ -433,6 +468,11 @@ textarea:focus {
 .message-box.error {
   border-color: rgba(255, 77, 77, .65);
   color: #ffd1d1;
+}
+
+.message-box.warning {
+  border-color: rgba(255, 181, 69, .75);
+  color: #ffe0a8;
 }
 
 .queue-list {

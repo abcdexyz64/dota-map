@@ -44,7 +44,15 @@ const i18n = {
     chatBindSaved: '喊话绑定已写入，重启游戏后生效',
     chatBindPreview: 'CFG 预览',
     chatBindRemoved: '喊话绑定已移除',
-    chatBindNoChange: 'CFG 已是最新'
+    chatBindNoChange: 'CFG 已是最新',
+    autoDetect: '自动检测',
+    actualMap: '当前实际地图',
+    activeStateNone: '未检测到 Dota Map 交换记录，当前按槽位文件名识别。',
+    activeStateActive: '检测到 {actual} 正在通过 {slot} 槽位启用；再次替换会先自动恢复这次交换。',
+    activeStateOfficial: '旧交换记录已经不再生效，文件内容看起来已回到原始槽位，记录已自动忽略。',
+    activeStateStale: '检测到 Steam 更新或手动改动，旧交换记录已自动忽略；当前按槽位文件名重新识别。',
+    activeStateInvalid: '旧交换记录不完整或备份缺失，软件已停止信任该记录。',
+    staleSwapSkipped: '已忽略过期旧交换记录'
   },
   en: {
     activeSlot: 'Active slot',
@@ -91,7 +99,15 @@ const i18n = {
     chatBindSaved: 'Chat binds written. Restart the game to apply them.',
     chatBindPreview: 'CFG preview',
     chatBindRemoved: 'Chat binds removed',
-    chatBindNoChange: 'CFG is already up to date'
+    chatBindNoChange: 'CFG is already up to date',
+    autoDetect: 'Auto detect',
+    actualMap: 'Actual map',
+    activeStateNone: 'No Dota Map swap record was found. The current map is identified by slot filename.',
+    activeStateActive: '{actual} is currently enabled through the {slot} slot. The next switch will restore this swap first.',
+    activeStateOfficial: 'The old swap record is no longer active. File contents appear to be back in their original slots, so the record was ignored.',
+    activeStateStale: 'A Steam update or manual change was detected. The old swap record was ignored and the slot is identified by filename again.',
+    activeStateInvalid: 'The old swap record is incomplete or its backup is missing. The app no longer trusts it.',
+    staleSwapSkipped: 'Ignored stale previous swap record'
   }
 };
 
@@ -102,6 +118,10 @@ const state = {
   sourceFile: '',
   slotFile: '',
   mapsDir: '',
+  activeSwap: {
+    status: 'none',
+    active: false
+  },
   chatBind: {
     cfgPath: '',
     managedBlockExists: false,
@@ -119,6 +139,9 @@ const state = {
 };
 
 const elements = {
+  activeStateBox: document.getElementById('activeStateBox'),
+  activeStateText: document.getElementById('activeStateText'),
+  actualMapTitle: document.getElementById('actualMapTitle'),
   abandonKey: document.getElementById('abandonKey'),
   abandonMessages: document.getElementById('abandonMessages'),
   applyChatBindsBtn: document.getElementById('applyChatBindsBtn'),
@@ -144,6 +167,7 @@ const elements = {
   scanBtn: document.getElementById('scanBtn'),
   slotSelect: document.getElementById('slotSelect'),
   slotTitle: document.getElementById('slotTitle'),
+  slotArt: document.getElementById('slotArt'),
   sourceArt: document.getElementById('sourceArt'),
   sourceSelect: document.getElementById('sourceSelect'),
   statusBadge: document.getElementById('statusBadge'),
@@ -170,6 +194,15 @@ async function requestJson(url, options) {
 
 function localizedLabel(map) {
   return map.label[state.lang] || map.label.en || map.fileName;
+}
+
+function mapByFile(fileName) {
+  return state.maps.find((map) => map.fileName === fileName);
+}
+
+function labelForFile(fileName) {
+  const map = mapByFile(fileName);
+  return map ? localizedLabel(map) : fileName || '';
 }
 
 function localizedCompatibility(map) {
@@ -199,6 +232,7 @@ function renderLanguage() {
   });
   elements.statusBadge.textContent = t('ready');
   renderChatBindStatus();
+  renderActiveSwap();
 }
 
 function renderMaps() {
@@ -253,15 +287,19 @@ function renderMaps() {
 function renderSelection() {
   const slot = state.maps.find((map) => map.fileName === state.slotFile);
   const source = state.maps.find((map) => map.fileName === state.sourceFile);
+  const actualSlotFile = actualFileForSlot(state.slotFile);
+  const actualSlot = mapByFile(actualSlotFile) || slot;
   const compatibility = localizedCompatibility(source);
-  elements.slotTitle.textContent = slot ? localizedLabel(slot) : 'Winter Slot';
+  elements.slotTitle.textContent = actualSlot ? localizedLabel(actualSlot) : 'Winter Slot';
   elements.sourceSelect.value = state.sourceFile;
   elements.slotSelect.value = state.slotFile;
+  elements.slotArt.className = `terrain-art ${artClass(actualSlotFile || state.slotFile)}`;
   elements.sourceArt.className = `terrain-art ${artClass(state.sourceFile)}`;
   elements.compatibilityBox.className = `compatibility-box ${compatibility.ranked}`;
   elements.compatibilityBox.innerHTML = source
     ? `<strong>${t('compatibility')}: ${compatibility.label}</strong><p>${compatibility.reason}</p>`
     : '';
+  renderActiveSwap();
 }
 
 function renderBackups() {
@@ -281,6 +319,38 @@ function renderBackups() {
     option.textContent = `${backup.createdAt} | ${backup.sourceFile} <-> ${backup.slotFile}`;
     elements.backupSelect.append(option);
   }
+}
+
+function actualFileForSlot(slotFile) {
+  if (state.activeSwap?.active && state.activeSwap.slotFile === slotFile) {
+    return state.activeSwap.sourceFile;
+  }
+  return slotFile;
+}
+
+function activeSwapMessage() {
+  const activeSwap = state.activeSwap || { status: 'none' };
+  const status = activeSwap.status || 'none';
+  const actual = labelForFile(activeSwap.active ? activeSwap.sourceFile : state.slotFile);
+  const slot = labelForFile(activeSwap.slotFile || state.slotFile);
+  const messages = {
+    none: t('activeStateNone'),
+    active: t('activeStateActive').replace('{actual}', actual).replace('{slot}', slot),
+    official: t('activeStateOfficial'),
+    stale: t('activeStateStale'),
+    invalid: t('activeStateInvalid')
+  };
+  return messages[status] || messages.invalid;
+}
+
+function renderActiveSwap() {
+  if (!elements.activeStateBox) return;
+  const status = state.activeSwap?.status || 'none';
+  const actualSlotFile = actualFileForSlot(state.slotFile);
+  const actualLabel = labelForFile(actualSlotFile);
+  elements.activeStateBox.className = `active-state-box ${status}`.trim();
+  elements.actualMapTitle.textContent = `${t('actualMap')}: ${actualLabel || t('autoDetect')}`;
+  elements.activeStateText.textContent = activeSwapMessage();
 }
 
 function renderChatBindStatus() {
@@ -372,15 +442,26 @@ async function scanMaps() {
   state.mapsDir = elements.mapsDir.value.trim();
   const json = await requestJson(`/api/maps?dir=${encodeURIComponent(state.mapsDir)}`);
   state.maps = json.maps;
+  state.activeSwap = json.activeSwap || { status: 'none', active: false };
   if (!state.slotFile || !state.maps.some((map) => map.fileName === state.slotFile)) {
-    state.slotFile = state.maps.find((map) => map.fileName === 'dota_winter.vpk')?.fileName || state.maps[0]?.fileName || '';
+    state.slotFile = state.activeSwap.slotFile || state.maps.find((map) => map.fileName === 'dota_winter.vpk')?.fileName || state.maps[0]?.fileName || '';
   }
-  if (!state.sourceFile || !state.maps.some((map) => map.fileName === state.sourceFile) || state.sourceFile === state.slotFile) {
-    state.sourceFile = state.maps.find((map) => map.fileName !== state.slotFile)?.fileName || state.maps[0]?.fileName || '';
+  const activeActualFile = actualFileForSlot(state.slotFile);
+  if (
+    !state.sourceFile ||
+    !state.maps.some((map) => map.fileName === state.sourceFile) ||
+    state.sourceFile === state.slotFile ||
+    state.sourceFile === activeActualFile
+  ) {
+    state.sourceFile = state.maps.find((map) => map.fileName !== state.slotFile && map.fileName !== activeActualFile)?.fileName ||
+      state.maps.find((map) => map.fileName !== state.slotFile)?.fileName ||
+      state.maps[0]?.fileName ||
+      '';
   }
   renderMaps();
   renderSelection();
-  setMessage(`${t('scanned')}: ${state.maps.length}`, 'ok');
+  const scanMode = ['stale', 'invalid'].includes(state.activeSwap.status) ? 'warning' : 'ok';
+  setMessage(`${t('scanned')}: ${state.maps.length}\n${activeSwapMessage()}`, scanMode);
   await loadBackups();
   await loadChatBinds();
 }
@@ -405,9 +486,14 @@ async function runSwitch(dryRun) {
     body: JSON.stringify(payload)
   });
   if (dryRun) {
-    setMessage(`${t('dryRunDone')}: ${json.plan.sourceFile} -> ${json.plan.slotFile}`, 'ok');
+    const statusNote = json.activeSwapStatus && json.activeSwapStatus.status !== 'none'
+      ? `\n${json.activeSwapStatus.reason?.[state.lang] || activeSwapMessage()}`
+      : '';
+    setMessage(`${t('dryRunDone')}: ${json.plan.sourceFile} -> ${json.plan.slotFile}${statusNote}`, 'ok');
   } else {
-    const prefix = json.revertedPrevious ? `${t('revertedPrevious')}. ` : '';
+    const prefix = json.revertedPrevious
+      ? `${t('revertedPrevious')}. `
+      : (json.skippedActiveSwap ? `${t('staleSwapSkipped')}. ` : '');
     setMessage(`${prefix}${t('switchDone')}. Backup: ${json.backupId}`, 'ok');
     await scanMaps();
   }
