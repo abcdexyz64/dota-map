@@ -94,6 +94,39 @@
           <select id="backupSelect"></select>
         </div>
 
+        <div class="chat-bind-box">
+          <div class="panel-heading compact">
+            <span class="eyebrow" data-i18n="chatBinds">喊话绑定</span>
+            <strong id="chatBindStatus">OFF</strong>
+          </div>
+          <label for="cfgPath" data-i18n="cfgFile">配置文件</label>
+          <input id="cfgPath" type="text" readonly spellcheck="false">
+
+          <div class="bind-grid">
+            <label for="predictionKey">
+              <span data-i18n="predictionKey">预测按键</span>
+              <input id="predictionKey" type="text" maxlength="32" spellcheck="false">
+            </label>
+            <label for="abandonKey">
+              <span data-i18n="abandonKey">逃跑按键</span>
+              <input id="abandonKey" type="text" maxlength="32" spellcheck="false">
+            </label>
+          </div>
+
+          <label for="predictionMessages" data-i18n="predictionMessages">预测喊话</label>
+          <textarea id="predictionMessages" class="chat-textarea" rows="3" spellcheck="false"></textarea>
+
+          <label for="abandonMessages" data-i18n="abandonMessages">逃跑恶搞喊话</label>
+          <textarea id="abandonMessages" class="chat-textarea" rows="3" spellcheck="false"></textarea>
+
+          <div class="bind-actions">
+            <button id="applyChatBindsBtn" class="small-button" type="button" data-i18n="applyChatBinds">写入 CFG</button>
+            <button id="previewChatBindsBtn" class="ghost-button" type="button" data-i18n="previewCfg">预览</button>
+            <button id="removeChatBindsBtn" class="ghost-button" type="button" data-i18n="removeChatBinds">移除</button>
+          </div>
+          <p class="cfg-hint" data-i18n="cfgHint">每一行会生成一条 say；为避免误执行命令，内容不允许包含英文分号或引号。</p>
+        </div>
+
         <div class="release-note">
           <strong data-i18n="releaseBoundaryTitle">开源发布边界</strong>
           <p data-i18n="releaseBoundaryText">仓库只包含工具源码，不内置或分发任何 Dota 地图文件。</p>

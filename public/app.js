@@ -28,7 +28,23 @@ const i18n = {
     revertedPrevious: '已先恢复上一次替换',
     switchMap: '一键替换地图',
     dryRunDone: '模拟执行完成，没有改动任何文件',
-    compatibility: '兼容性'
+    compatibility: '兼容性',
+    chatBinds: '喊话绑定',
+    cfgFile: '配置文件',
+    predictionKey: '预测按键',
+    abandonKey: '逃跑按键',
+    predictionMessages: '预测喊话',
+    abandonMessages: '逃跑恶搞喊话',
+    applyChatBinds: '写入 CFG',
+    previewCfg: '预览',
+    removeChatBinds: '移除',
+    chatBindEnabled: '已写入',
+    chatBindMissing: '未写入',
+    cfgHint: '每一行会生成一条 say；为避免误执行命令，内容不允许包含英文分号或引号。',
+    chatBindSaved: '喊话绑定已写入，重启游戏后生效',
+    chatBindPreview: 'CFG 预览',
+    chatBindRemoved: '喊话绑定已移除',
+    chatBindNoChange: 'CFG 已是最新'
   },
   en: {
     activeSlot: 'Active slot',
@@ -59,7 +75,23 @@ const i18n = {
     revertedPrevious: 'Previous switch was restored first',
     switchMap: 'Switch map',
     dryRunDone: 'Dry run complete. No files were changed.',
-    compatibility: 'Compatibility'
+    compatibility: 'Compatibility',
+    chatBinds: 'Chat binds',
+    cfgFile: 'CFG file',
+    predictionKey: 'Prediction key',
+    abandonKey: 'Abandon key',
+    predictionMessages: 'Prediction chat',
+    abandonMessages: 'Abandon prank chat',
+    applyChatBinds: 'Write CFG',
+    previewCfg: 'Preview',
+    removeChatBinds: 'Remove',
+    chatBindEnabled: 'Written',
+    chatBindMissing: 'Missing',
+    cfgHint: 'Each line becomes one say command. To avoid accidental command execution, quotes and semicolons are blocked.',
+    chatBindSaved: 'Chat binds written. Restart the game to apply them.',
+    chatBindPreview: 'CFG preview',
+    chatBindRemoved: 'Chat binds removed',
+    chatBindNoChange: 'CFG is already up to date'
   }
 };
 
@@ -69,12 +101,31 @@ const state = {
   backups: [],
   sourceFile: '',
   slotFile: '',
-  mapsDir: ''
+  mapsDir: '',
+  chatBind: {
+    cfgPath: '',
+    managedBlockExists: false,
+    predictionKey: 'F6',
+    predictionMessages: [
+      '已经预测他们队伍将取得胜利！',
+      '已经连续2688次成功预测了胜利。'
+    ],
+    abandonKey: '-',
+    abandonMessages: [
+      'XXX由于长时间没有重连至游戏，系统判定他为逃跑。',
+      '剩余玩家可以自由退出。'
+    ]
+  }
 };
 
 const elements = {
+  abandonKey: document.getElementById('abandonKey'),
+  abandonMessages: document.getElementById('abandonMessages'),
+  applyChatBindsBtn: document.getElementById('applyChatBindsBtn'),
   backupCount: document.getElementById('backupCount'),
   backupSelect: document.getElementById('backupSelect'),
+  cfgPath: document.getElementById('cfgPath'),
+  chatBindStatus: document.getElementById('chatBindStatus'),
   compatibilityBox: document.getElementById('compatibilityBox'),
   dryRunBtn: document.getElementById('dryRunBtn'),
   langEn: document.getElementById('langEn'),
@@ -84,7 +135,11 @@ const elements = {
   mapsDir: document.getElementById('mapsDir'),
   messageBox: document.getElementById('messageBox'),
   openFolderBtn: document.getElementById('openFolderBtn'),
+  predictionKey: document.getElementById('predictionKey'),
+  predictionMessages: document.getElementById('predictionMessages'),
+  previewChatBindsBtn: document.getElementById('previewChatBindsBtn'),
   refreshBackupsBtn: document.getElementById('refreshBackupsBtn'),
+  removeChatBindsBtn: document.getElementById('removeChatBindsBtn'),
   restoreBtn: document.getElementById('restoreBtn'),
   scanBtn: document.getElementById('scanBtn'),
   slotSelect: document.getElementById('slotSelect'),
@@ -143,6 +198,7 @@ function renderLanguage() {
     node.textContent = t(node.dataset.i18n);
   });
   elements.statusBadge.textContent = t('ready');
+  renderChatBindStatus();
 }
 
 function renderMaps() {
@@ -227,6 +283,91 @@ function renderBackups() {
   }
 }
 
+function renderChatBindStatus() {
+  elements.chatBindStatus.textContent = state.chatBind.managedBlockExists
+    ? t('chatBindEnabled')
+    : t('chatBindMissing');
+}
+
+function renderChatBinds() {
+  elements.cfgPath.value = state.chatBind.cfgPath;
+  elements.predictionKey.value = state.chatBind.predictionKey;
+  elements.predictionMessages.value = state.chatBind.predictionMessages.join('\n');
+  elements.abandonKey.value = state.chatBind.abandonKey;
+  elements.abandonMessages.value = state.chatBind.abandonMessages.join('\n');
+  renderChatBindStatus();
+}
+
+function textareaMessages(value) {
+  return String(value || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function collectChatBindPayload(dryRun = false) {
+  return {
+    mapsDir: elements.mapsDir.value.trim(),
+    cfgPath: elements.cfgPath.value.trim(),
+    predictionKey: elements.predictionKey.value.trim(),
+    predictionMessages: textareaMessages(elements.predictionMessages.value),
+    abandonKey: elements.abandonKey.value.trim(),
+    abandonMessages: textareaMessages(elements.abandonMessages.value),
+    dryRun
+  };
+}
+
+async function loadChatBinds() {
+  state.mapsDir = elements.mapsDir.value.trim();
+  const json = await requestJson(`/api/chat-binds?dir=${encodeURIComponent(state.mapsDir)}`);
+  state.chatBind = {
+    cfgPath: json.cfgPath,
+    managedBlockExists: json.managedBlockExists,
+    predictionKey: json.settings.predictionKey,
+    predictionMessages: json.settings.predictionMessages,
+    abandonKey: json.settings.abandonKey,
+    abandonMessages: json.settings.abandonMessages
+  };
+  renderChatBinds();
+}
+
+async function applyChatBinds(dryRun = false) {
+  const json = await requestJson('/api/chat-binds', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(collectChatBindPayload(dryRun))
+  });
+
+  if (dryRun) {
+    setMessage(`${t('chatBindPreview')}:\n${json.block}`, 'ok');
+    return;
+  }
+
+  state.chatBind.managedBlockExists = true;
+  state.chatBind.cfgPath = json.cfgPath;
+  state.chatBind.predictionKey = json.settings.predictionKey;
+  state.chatBind.predictionMessages = json.settings.predictionMessages;
+  state.chatBind.abandonKey = json.settings.abandonKey;
+  state.chatBind.abandonMessages = json.settings.abandonMessages;
+  renderChatBinds();
+  setMessage(json.changed ? `${t('chatBindSaved')}: ${json.cfgPath}` : t('chatBindNoChange'), 'ok');
+}
+
+async function removeChatBinds() {
+  const json = await requestJson('/api/chat-binds/remove', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      mapsDir: elements.mapsDir.value.trim(),
+      cfgPath: elements.cfgPath.value.trim()
+    })
+  });
+
+  state.chatBind.managedBlockExists = false;
+  renderChatBindStatus();
+  setMessage(json.changed ? `${t('chatBindRemoved')}: ${json.cfgPath}` : t('chatBindNoChange'), 'ok');
+}
+
 async function scanMaps() {
   state.mapsDir = elements.mapsDir.value.trim();
   const json = await requestJson(`/api/maps?dir=${encodeURIComponent(state.mapsDir)}`);
@@ -241,6 +382,7 @@ async function scanMaps() {
   renderSelection();
   setMessage(`${t('scanned')}: ${state.maps.length}`, 'ok');
   await loadBackups();
+  await loadChatBinds();
 }
 
 async function loadBackups() {
@@ -325,6 +467,9 @@ function bindEvents() {
   elements.restoreBtn.addEventListener('click', () => restoreSelectedBackup().catch((error) => setMessage(error.message, 'error')));
   elements.refreshBackupsBtn.addEventListener('click', () => loadBackups().catch((error) => setMessage(error.message, 'error')));
   elements.openFolderBtn.addEventListener('click', () => openFolder().catch((error) => setMessage(error.message, 'error')));
+  elements.applyChatBindsBtn.addEventListener('click', () => applyChatBinds(false).catch((error) => setMessage(error.message, 'error')));
+  elements.previewChatBindsBtn.addEventListener('click', () => applyChatBinds(true).catch((error) => setMessage(error.message, 'error')));
+  elements.removeChatBindsBtn.addEventListener('click', () => removeChatBinds().catch((error) => setMessage(error.message, 'error')));
 }
 
 async function init() {

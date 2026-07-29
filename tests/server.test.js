@@ -76,6 +76,41 @@ test('POST /api/switch supports dry run without changing files', async () => {
   });
 });
 
+test('GET and POST /api/chat-binds manage autoexec.cfg from a maps directory', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dota-map-server-cfg-test-'));
+  const mapsDir = path.join(root, 'game', 'dota', 'maps');
+  const cfgPath = path.join(root, 'game', 'dota', 'cfg', 'autoexec.cfg');
+  fs.mkdirSync(mapsDir, { recursive: true });
+
+  await withServer(async (baseUrl) => {
+    const before = await fetch(`${baseUrl}/api/chat-binds?dir=${encodeURIComponent(mapsDir)}`);
+    const beforeJson = await before.json();
+
+    assert.equal(before.status, 200);
+    assert.equal(beforeJson.exists, false);
+    assert.equal(beforeJson.cfgPath, cfgPath);
+
+    const response = await fetch(`${baseUrl}/api/chat-binds`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        mapsDir,
+        predictionKey: 'F9',
+        predictionMessages: ['赢了赢了'],
+        abandonKey: '-',
+        abandonMessages: ['有人跑了']
+      })
+    });
+    const json = await response.json();
+    const content = fs.readFileSync(cfgPath, 'utf8');
+
+    assert.equal(response.status, 200);
+    assert.equal(json.ok, true);
+    assert.match(content, /bind "F9" "say 赢了赢了"/);
+    assert.match(content, /bind "-" "say 有人跑了"/);
+  });
+});
+
 test('GET / serves the Dota Map UI shell', async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/`);

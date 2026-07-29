@@ -1,5 +1,5 @@
 param(
-  [string]$Version = "0.1.0"
+  [string]$Version = "0.2.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -90,6 +90,7 @@ Dota Map quick start
 2. Double-click DotaMap.cmd.
 3. The app opens in your browser.
 4. Use Dry run before switching maps.
+5. Use Preview before writing chat bind CFG changes.
 
 This package does not include Dota 2 map files.
 "@

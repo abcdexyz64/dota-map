@@ -1,6 +1,6 @@
 # Dota Map
 
-Dota Map is a local-only Windows helper for switching Dota 2 terrain `.vpk` filenames through a black-and-orange browser UI.
+Dota Map is a local-only Windows helper for switching Dota 2 terrain `.vpk` filenames and managing simple Dota 2 chat binds through a black-and-orange browser UI.
 
 It does not include, download, or redistribute any Dota 2 map files. Users must provide their own local Dota 2 installation and map files.
 
@@ -48,6 +48,31 @@ Use **Dry run** first to preview the operation. Dry run does not require Dota to
 
 When you switch maps repeatedly, Dota Map automatically restores the previous active filename swap before applying the new one. This prevents chained swaps from leaving older terrain files under the wrong names.
 
+## Chat Binds
+
+The **Chat binds** panel writes a managed block to:
+
+```text
+...\steamapps\common\dota 2 beta\game\dota\cfg\autoexec.cfg
+```
+
+By default it creates:
+
+```cfg
+bind "F6" "say 已经预测他们队伍将取得胜利！; say 已经连续2688次成功预测了胜利。"
+bind "-" "say XXX由于长时间没有重连至游戏，系统判定他为逃跑。; say 剩余玩家可以自由退出。"
+```
+
+You can customize both keys and both message groups in the UI. Each textarea line becomes one `say` command. The tool blocks English semicolons and quotes in message text so a typo cannot accidentally inject another console command.
+
+Use **Preview** first to inspect the generated cfg block. Use **Write CFG** to create or update the block. If `autoexec.cfg` already exists, Dota Map stores a backup under `.dota-map-cfg-backups` before writing. Use **Remove** to delete only the Dota Map managed block while preserving the rest of the file.
+
+Restart Dota after writing the binds. If your local setup does not auto-run `autoexec.cfg`, add this Steam launch option:
+
+```text
++exec autoexec.cfg
+```
+
 ## Map Compatibility Labels
 
 - **Current-layout terrain**: cosmetic terrain packages such as Winter, Autumn, Desert, Immortal Gardens, The Emerald Abyss, Reef's Edge, and Sanctums of the Divine.
@@ -60,6 +85,7 @@ When you switch maps repeatedly, Dota Map automatically restores the previous ac
 - Every real switch creates timestamped backup copies before any rename happens.
 - Dota must be closed before switching or restoring.
 - Restore uses the selected backup manifest to copy original files back to their original names.
+- Chat bind writes only touch the selected `autoexec.cfg` file and only replace the block between Dota Map markers.
 - The app binds to `127.0.0.1`; it is not a public web service.
 
 ## Development
@@ -78,6 +104,6 @@ npm run package:win
 npm run package:exe
 ```
 
-The zip is written to `dist/dota-map-windows-0.1.0.zip`. The package includes the orange-black `dota2map` icon in `assets/` and does not include any `.vpk` files.
+The zip is written to `dist/dota-map-windows-0.2.0.zip`. The package includes the orange-black `dota2map` icon in `assets/` and does not include any `.vpk` files.
 
-The EXE package is written to `dist/dota-map-windows-exe-0.1.0.zip`. It contains `DotaMap.exe`, so users do not need to install Node.js separately.
+The EXE package is written to `dist/dota-map-windows-exe-0.2.0.zip`. It contains `DotaMap.exe`, so users do not need to install Node.js separately.

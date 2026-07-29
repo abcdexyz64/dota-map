@@ -1,7 +1,7 @@
 {
   "name": "dota-map",
-  "version": "0.1.0",
-  "description": "A local web UI for safely swapping Dota 2 terrain map VPK filenames.",
+  "version": "0.2.0",
+  "description": "A local web UI for safely swapping Dota 2 terrain map VPK filenames and managing Dota 2 chat binds.",
   "main": "src/server.js",
   "bin": "src/server.js",
   "scripts": {
@@ -14,6 +14,9 @@
   "keywords": [
     "dota",
     "dota2",
+    "autoexec",
+    "cfg",
+    "bind",
     "terrain",
     "maps",
     "vpk"

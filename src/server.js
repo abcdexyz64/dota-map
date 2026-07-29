@@ -6,6 +6,11 @@ const { URL } = require('node:url');
 const sea = require('node:sea');
 
 const {
+  configureChatBinds,
+  getChatBindInfo,
+  removeChatBinds
+} = require('./cfgManager');
+const {
   DEFAULT_DOTA_MAPS_PATH,
   listBackups,
   restoreBackup,
@@ -151,6 +156,13 @@ function createServer(options = {}) {
         return;
       }
 
+      if (req.method === 'GET' && requestUrl.pathname === '/api/chat-binds') {
+        const mapsDir = requestUrl.searchParams.get('dir') || DEFAULT_DOTA_MAPS_PATH;
+        const cfgPath = requestUrl.searchParams.get('cfgPath') || '';
+        sendJson(res, 200, getChatBindInfo({ mapsDir, cfgPath }));
+        return;
+      }
+
       if (req.method === 'POST' && requestUrl.pathname === '/api/switch') {
         const body = await readJsonBody(req);
         sendJson(res, 200, switchMap({
@@ -169,6 +181,30 @@ function createServer(options = {}) {
           mapsDir: body.mapsDir,
           backupId: body.backupId,
           processChecker
+        }));
+        return;
+      }
+
+      if (req.method === 'POST' && requestUrl.pathname === '/api/chat-binds') {
+        const body = await readJsonBody(req);
+        sendJson(res, 200, configureChatBinds({
+          mapsDir: body.mapsDir,
+          cfgPath: body.cfgPath,
+          predictionKey: body.predictionKey,
+          predictionMessages: body.predictionMessages,
+          abandonKey: body.abandonKey,
+          abandonMessages: body.abandonMessages,
+          dryRun: Boolean(body.dryRun)
+        }));
+        return;
+      }
+
+      if (req.method === 'POST' && requestUrl.pathname === '/api/chat-binds/remove') {
+        const body = await readJsonBody(req);
+        sendJson(res, 200, removeChatBinds({
+          mapsDir: body.mapsDir,
+          cfgPath: body.cfgPath,
+          dryRun: Boolean(body.dryRun)
         }));
         return;
       }

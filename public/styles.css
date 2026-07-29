@@ -180,7 +180,8 @@ h1 {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 38px;
   color: var(--text);
@@ -194,12 +195,20 @@ input {
   padding: 8px 10px;
 }
 
+textarea {
+  min-height: 72px;
+  padding: 9px 10px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
 select {
   padding: 8px 9px;
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: var(--orange);
 }
 
@@ -413,6 +422,7 @@ select:focus {
   border: 1px solid #303030;
   border-radius: var(--radius);
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .message-box.ok {
@@ -454,6 +464,55 @@ select:focus {
   margin-top: 10px;
 }
 
+.chat-bind-box {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+  padding: 12px;
+  background: #141414;
+  border: 1px solid #333;
+  border-radius: var(--radius);
+}
+
+.chat-bind-box label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chat-bind-box .panel-heading strong {
+  color: #050505;
+  background: var(--orange);
+  border-radius: var(--radius);
+  padding: 4px 7px;
+  font-size: 11px;
+}
+
+.bind-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.chat-textarea {
+  font-size: 12px;
+}
+
+.bind-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.cfg-hint {
+  margin: 0;
+  color: #aaa;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .release-note {
   margin-top: 16px;
   padding: 12px;
@@ -487,7 +546,9 @@ select:focus {
   .topbar,
   .top-actions,
   .switch-grid,
-  .secondary-actions {
+  .secondary-actions,
+  .bind-grid,
+  .bind-actions {
     grid-template-columns: 1fr;
   }
 
