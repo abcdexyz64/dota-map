@@ -1,6 +1,6 @@
 {
   "name": "dota-map",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A local web UI for safely swapping Dota 2 terrain map VPK filenames, detecting active terrain state, and managing Dota 2 chat binds.",
   "main": "src/server.js",
   "bin": "src/server.js",

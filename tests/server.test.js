@@ -139,8 +139,10 @@ test('GET and POST /api/chat-binds manage autoexec.cfg from a maps directory', a
 
     assert.equal(response.status, 200);
     assert.equal(json.ok, true);
-    assert.match(content, /bind "F9" "say 赢了赢了"/);
-    assert.match(content, /bind "-" "say 有人跑了"/);
+    assert.match(content, /alias \+dota_map_prediction "say 赢了赢了"/);
+    assert.match(content, /bind "F9" "\+dota_map_prediction"/);
+    assert.match(content, /alias \+dota_map_abandon "say 有人跑了"/);
+    assert.match(content, /bind "MINUS" "\+dota_map_abandon"/);
   });
 });
 

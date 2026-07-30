@@ -8,11 +8,17 @@ const DEFAULT_DOTA_CFG_PATH = path.join(path.dirname(DEFAULT_DOTA_MAPS_PATH), 'c
 const CFG_BACKUP_DIR_NAME = '.dota-map-cfg-backups';
 const CHAT_BIND_START = '// Dota Map chat binds begin';
 const CHAT_BIND_END = '// Dota Map chat binds end';
-const WAIT_COMMANDS_BETWEEN_LINES = 10;
+const CHAT_BIND_ALIASES = {
+  prediction: 'dota_map_prediction',
+  abandon: 'dota_map_abandon'
+};
 
 const KEY_ALIASES = new Map([
   ['*', 'KP_MULTIPLY'],
-  ['＊', 'KP_MULTIPLY']
+  ['＊', 'KP_MULTIPLY'],
+  ['-', 'MINUS'],
+  ['－', 'MINUS'],
+  ['−', 'MINUS']
 ]);
 
 const DEFAULT_CHAT_BIND_SETTINGS = {
@@ -142,14 +148,20 @@ function quoteCfgArg(value) {
 }
 
 function sayCommand(messages) {
-  const waitCommands = Array.from({ length: WAIT_COMMANDS_BETWEEN_LINES }, () => 'wait');
-  return messages
-    .flatMap((message, index) => (index === 0 ? [`say ${message}`] : [...waitCommands, `say ${message}`]))
-    .join('; ');
+  return messages.map((message) => `say ${message}`).join('; ');
 }
 
-function buildBindLine(key, messages) {
-  return `bind ${quoteCfgArg(key)} ${quoteCfgArg(sayCommand(messages))}`;
+function buildAliasLines(aliasBase, messages) {
+  const pressCommand = sayCommand(messages.slice(0, 1));
+  const releaseCommand = sayCommand(messages.slice(1));
+  return [
+    `alias +${aliasBase} ${quoteCfgArg(pressCommand)}`,
+    `alias -${aliasBase} ${quoteCfgArg(releaseCommand) || '""'}`
+  ];
+}
+
+function buildBindLine(key, aliasBase) {
+  return `bind ${quoteCfgArg(key)} ${quoteCfgArg(`+${aliasBase}`)}`;
 }
 
 function buildChatBindBlock(options = {}) {
@@ -157,9 +169,11 @@ function buildChatBindBlock(options = {}) {
   const lines = [
     CHAT_BIND_START,
     '// prediction',
-    buildBindLine(settings.predictionKey, settings.predictionMessages),
+    ...buildAliasLines(CHAT_BIND_ALIASES.prediction, settings.predictionMessages),
+    buildBindLine(settings.predictionKey, CHAT_BIND_ALIASES.prediction),
     '// abandon',
-    buildBindLine(settings.abandonKey, settings.abandonMessages),
+    ...buildAliasLines(CHAT_BIND_ALIASES.abandon, settings.abandonMessages),
+    buildBindLine(settings.abandonKey, CHAT_BIND_ALIASES.abandon),
     CHAT_BIND_END
   ];
   return {
@@ -233,6 +247,10 @@ function parseChatBindBlock(content) {
   const block = content.slice(start, end + CHAT_BIND_END.length);
   const result = {};
   let section = '';
+  const aliasCommands = {
+    prediction: {},
+    abandon: {}
+  };
   for (const line of block.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (trimmed === '// prediction') {
@@ -243,10 +261,30 @@ function parseChatBindBlock(content) {
       section = 'abandon';
       continue;
     }
+    for (const [aliasSection, aliasBase] of Object.entries(CHAT_BIND_ALIASES)) {
+      const aliasMatch = trimmed.match(new RegExp(`^alias\\s+([+-])${aliasBase}\\s+"([^"]*)"$`, 'i'));
+      if (aliasMatch) {
+        aliasCommands[aliasSection][aliasMatch[1] === '+' ? 'press' : 'release'] = aliasMatch[2];
+      }
+    }
     const match = trimmed.match(/^bind\s+"([^"]+)"\s+"([^"]+)"$/i);
     if (!match || !section) continue;
+    if (match[2].toLowerCase() === `+${CHAT_BIND_ALIASES[section]}`.toLowerCase()) {
+      result[`${section}Key`] = match[1];
+      continue;
+    }
     result[`${section}Key`] = match[1];
     result[`${section}Messages`] = parseSayMessages(match[2]);
+  }
+
+  for (const [aliasSection, commands] of Object.entries(aliasCommands)) {
+    const messages = [
+      ...parseSayMessages(commands.press),
+      ...parseSayMessages(commands.release)
+    ];
+    if (messages.length) {
+      result[`${aliasSection}Messages`] = messages;
+    }
   }
 
   if (!result.predictionKey || !result.abandonKey) return null;
@@ -343,9 +381,9 @@ module.exports = {
   CFG_BACKUP_DIR_NAME,
   CHAT_BIND_END,
   CHAT_BIND_START,
+  CHAT_BIND_ALIASES,
   DEFAULT_CHAT_BIND_SETTINGS,
   DEFAULT_DOTA_CFG_PATH,
-  WAIT_COMMANDS_BETWEEN_LINES,
   buildChatBindBlock,
   configureChatBinds,
   defaultCfgPathForMapsDir,
