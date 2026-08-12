@@ -34,6 +34,8 @@ const DEFAULT_CHAT_BIND_SETTINGS = {
   ]
 };
 
+const MAX_CHAT_BIND_LINES = 2;
+
 function assertExistingDirectory(dirPath, label) {
   if (!dirPath || typeof dirPath !== 'string') {
     throw new Error(`${label} is required`);
@@ -98,6 +100,10 @@ function normalizeMessages(messages, label) {
 
   if (!normalized.length) {
     throw new Error(`${label} messages are required`);
+  }
+
+  if (normalized.length > MAX_CHAT_BIND_LINES) {
+    throw new Error(`${label} supports up to ${MAX_CHAT_BIND_LINES} lines in CFG bind mode`);
   }
 
   for (const message of normalized) {
@@ -384,6 +390,7 @@ module.exports = {
   CHAT_BIND_ALIASES,
   DEFAULT_CHAT_BIND_SETTINGS,
   DEFAULT_DOTA_CFG_PATH,
+  MAX_CHAT_BIND_LINES,
   buildChatBindBlock,
   configureChatBinds,
   defaultCfgPathForMapsDir,

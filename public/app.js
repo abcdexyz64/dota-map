@@ -40,7 +40,7 @@ const i18n = {
     removeChatBinds: '移除',
     chatBindEnabled: '已写入',
     chatBindMissing: '未写入',
-    cfgHint: '第一行在按下按键时发送，后续行在松开按键时发送；* 会写成 KP_MULTIPLY，- 会写成 MINUS。为避免误执行命令，内容不允许包含英文分号或引号。',
+    cfgHint: 'CFG 绑定模式最多支持两行：第一行在按下按键时发送，第二行在松开按键时发送；* 会写成 KP_MULTIPLY，- 会写成 MINUS。为避免误执行命令，内容不允许包含英文分号或引号。',
     chatBindSaved: '喊话绑定已写入，重启游戏后生效',
     chatBindPreview: 'CFG 预览',
     chatBindRemoved: '喊话绑定已移除',
@@ -95,7 +95,7 @@ const i18n = {
     removeChatBinds: 'Remove',
     chatBindEnabled: 'Written',
     chatBindMissing: 'Missing',
-    cfgHint: 'The first line is sent on key down; following lines are sent on key up. * is written as KP_MULTIPLY and - as MINUS. To avoid accidental command execution, quotes and semicolons are blocked.',
+    cfgHint: 'CFG bind mode supports up to two lines: the first line is sent on key down and the second line is sent on key up. * is written as KP_MULTIPLY and - as MINUS. To avoid accidental command execution, quotes and semicolons are blocked.',
     chatBindSaved: 'Chat binds written. Restart the game to apply them.',
     chatBindPreview: 'CFG preview',
     chatBindRemoved: 'Chat binds removed',
@@ -372,7 +372,8 @@ function textareaMessages(value) {
   return String(value || '')
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, 2);
 }
 
 function collectChatBindPayload(dryRun = false) {

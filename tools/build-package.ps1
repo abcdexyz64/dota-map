@@ -1,5 +1,5 @@
 param(
-  [string]$Version = "0.3.2"
+  [string]$Version = "0.3.3"
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,7 +8,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $dist = Join-Path $root "dist"
 $stageRoot = Join-Path $dist "stage"
 $stage = Join-Path $stageRoot "DotaMap"
-$zip = Join-Path $dist "dota-map-windows-$Version.zip"
+$zip = Join-Path $dist "dota-map-windows-source-needs-node-$Version.zip"
 $assets = Join-Path $root "assets"
 
 function New-DotaMapIcon {
@@ -84,9 +84,15 @@ foreach ($dir in @("assets", "public", "src")) {
 }
 
 $quickStart = @"
-Dota Map quick start
+Dota Map source package
 
-1. Install Node.js 18 or newer if it is not already installed.
+This package requires Node.js 18 or newer.
+
+For normal users who do not want to install Node.js, download the EXE package instead:
+DotaMap-Windows-EXE-No-Node-Required-$Version.zip
+
+Run this source package:
+1. Install Node.js 18 or newer.
 2. Double-click DotaMap.cmd.
 3. The app opens in your browser.
 4. Use Dry run before switching maps.

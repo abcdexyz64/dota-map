@@ -1,5 +1,5 @@
 param(
-  [string]$Version = "0.3.2"
+  [string]$Version = "0.3.3"
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,7 +12,7 @@ $bundlePath = Join-Path $seaDir "server.bundle.cjs"
 $seaConfigPath = Join-Path $seaDir "sea-config.json"
 $blobPath = Join-Path $seaDir "dota-map.blob"
 $exePath = Join-Path $exeDir "DotaMap.exe"
-$zipPath = Join-Path $root "dist\dota-map-windows-exe-$Version.zip"
+$zipPath = Join-Path $root "dist\DotaMap-Windows-EXE-No-Node-Required-$Version.zip"
 $iconPath = Join-Path $root "assets\dota2map.ico"
 
 function Invoke-Checked {
@@ -79,6 +79,7 @@ Dota Map EXE package
 
 Double-click DotaMap.exe to start the local app.
 The app opens a browser at the local URL it selects.
+Node.js is already embedded in this EXE package. Users do not need to install Node.js.
 
 This package does not include Dota 2 map files.
 "@

@@ -7,8 +7,11 @@ It does not include, download, or redistribute any Dota 2 map files. Users must 
 ## Requirements
 
 - Windows
-- Node.js 18 or newer
 - A local Dota 2 install
+
+Normal users should download `DotaMap-Windows-EXE-No-Node-Required-*.zip` from the latest GitHub Release and run `DotaMap.exe`. That package does not require Node.js.
+
+The `dota-map-windows-source-needs-node-*.zip` package is for developers or advanced users who want to run the source package. It requires Node.js 18 or newer.
 
 The default maps directory is:
 
@@ -78,7 +81,7 @@ alias -dota_map_abandon "say 剩余玩家可以自由退出。"
 bind "MINUS" "+dota_map_abandon"
 ```
 
-You can customize both keys and both message groups in the UI. The first textarea line is sent when the key is pressed, and following lines are sent when the key is released. The `*` key is written as `KP_MULTIPLY`; the main `-` key is written as `MINUS`. The tool blocks English semicolons and quotes in message text so a typo cannot accidentally inject another console command.
+You can customize both keys and both message groups in the UI. CFG bind mode supports up to two lines per message group: the first textarea line is sent when the key is pressed, and the second line is sent when the key is released. The `*` key is written as `KP_MULTIPLY`; the main `-` key is written as `MINUS`. The tool blocks English semicolons and quotes in message text so a typo cannot accidentally inject another console command.
 
 Use **Preview** first to inspect the generated cfg block. Use **Write CFG** to create or update the block. If `autoexec.cfg` already exists, Dota Map stores a backup under `.dota-map-cfg-backups` before writing. Use **Remove** to delete only the Dota Map managed block while preserving the rest of the file.
 
@@ -120,6 +123,6 @@ npm run package:win
 npm run package:exe
 ```
 
-The zip is written to `dist/dota-map-windows-0.3.2.zip`. The package includes the orange-black `dota2map` icon in `assets/` and does not include any `.vpk` files.
+The source zip is written to `dist/dota-map-windows-source-needs-node-0.3.3.zip`. This package requires Node.js 18 or newer, includes the orange-black `dota2map` icon in `assets/`, and does not include any `.vpk` files.
 
-The EXE package is written to `dist/dota-map-windows-exe-0.3.2.zip`. It contains `DotaMap.exe`, so users do not need to install Node.js separately.
+The EXE package is written to `dist/DotaMap-Windows-EXE-No-Node-Required-0.3.3.zip`. It contains `DotaMap.exe`, so users do not need to install Node.js separately.

@@ -103,7 +103,7 @@ test('getChatBindInfo parses press and release alias say messages', () => {
   configureChatBinds({
     mapsDir,
     predictionKey: '*',
-    predictionMessages: ['A', 'B', 'C'],
+    predictionMessages: ['A', 'B'],
     abandonKey: '-',
     abandonMessages: ['D', 'E']
   });
@@ -111,9 +111,34 @@ test('getChatBindInfo parses press and release alias say messages', () => {
   const info = getChatBindInfo({ mapsDir });
 
   assert.equal(info.settings.predictionKey, 'KP_MULTIPLY');
-  assert.deepEqual(info.settings.predictionMessages, ['A', 'B', 'C']);
+  assert.deepEqual(info.settings.predictionMessages, ['A', 'B']);
   assert.equal(info.settings.abandonKey, 'MINUS');
   assert.deepEqual(info.settings.abandonMessages, ['D', 'E']);
+});
+
+test('getChatBindInfo can read legacy release aliases with multiple say commands', () => {
+  const { mapsDir, cfgPath } = makeTempDotaDir();
+  fs.mkdirSync(path.dirname(cfgPath), { recursive: true });
+  fs.writeFileSync(cfgPath, [
+    CHAT_BIND_START,
+    '// prediction',
+    'alias +dota_map_prediction "say A"',
+    'alias -dota_map_prediction "say B; say C"',
+    'bind "KP_MULTIPLY" "+dota_map_prediction"',
+    '// abandon',
+    'alias +dota_map_abandon "say D"',
+    'alias -dota_map_abandon "say E; say F"',
+    'bind "MINUS" "+dota_map_abandon"',
+    CHAT_BIND_END,
+    ''
+  ].join('\n'), 'utf8');
+
+  const info = getChatBindInfo({ mapsDir });
+
+  assert.equal(info.settings.predictionKey, 'KP_MULTIPLY');
+  assert.deepEqual(info.settings.predictionMessages, ['A', 'B', 'C']);
+  assert.equal(info.settings.abandonKey, 'MINUS');
+  assert.deepEqual(info.settings.abandonMessages, ['D', 'E', 'F']);
 });
 
 test('configureChatBinds accepts asterisk as keypad multiply shortcut', () => {
@@ -175,6 +200,10 @@ test('configureChatBinds rejects unsafe keys and injected commands', () => {
   assert.throws(
     () => configureChatBinds({ mapsDir, predictionMessages: ['hello; quit'] }),
     /cannot contain quotes/
+  );
+  assert.throws(
+    () => configureChatBinds({ mapsDir, predictionMessages: ['one', 'two', 'three'] }),
+    /supports up to 2 lines/
   );
   assert.throws(
     () => configureChatBinds({ mapsDir, predictionKey: 'F6', abandonKey: 'f6' }),
